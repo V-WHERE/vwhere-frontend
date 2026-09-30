@@ -3,3 +3,5 @@ dist/
 tmp/
 design-reference.pdf
 *.tsbuildinfo
+
+.vercel
