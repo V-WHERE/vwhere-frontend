@@ -1,4 +1,215 @@
-import{useEffect,useState}from'react';import'./App.css';import{Brand}from'./components/Brand';import{UserView}from'./components/UserView';import{StaffView}from'./components/StaffView';import type{BinDocument,Catalog,History,Lookups,MapDocument,Meta}from'./types';
-async function json<T>(url:string,signal:AbortSignal):Promise<T>{const r=await fetch(url,{signal});if(!r.ok)throw new Error(`자료를 불러오지 못했습니다 (${r.status})`);return r.json() as Promise<T>}
-export default function App(){const[mode,setMode]=useState<'user'|'staff'>('user'),[month,setMonth]=useState(''),[region,setRegion]=useState('ALL'),[sport,setSport]=useState('ALL'),[period,setPeriod]=useState('2026'),[retry,setRetry]=useState(0),[meta,setMeta]=useState<Meta>(),[lookups,setLookups]=useState<Lookups>(),[catalog,setCatalog]=useState<Catalog>(),[map,setMap]=useState<MapDocument>(),[bins,setBins]=useState<BinDocument>(),[history,setHistory]=useState<History>(),[error,setError]=useState('');useEffect(()=>{const c=new AbortController();Promise.all([json<Meta>('/data/meta.json',c.signal),json<Lookups>('/data/lookups.json',c.signal),json<History>('/data/history.json',c.signal)]).then(([m,l,h])=>{setMeta(m);setLookups(l);setHistory(h);setMonth(v=>v||m.default_catalog_month)}).catch(e=>{if(!c.signal.aborted)setError(e instanceof Error?e.message:'자료 읽기 실패')});return()=>c.abort()},[retry]);useEffect(()=>{if(!month)return;const c=new AbortController();json<Catalog>(`/data/catalog/${month}.json`,c.signal).then(setCatalog).catch(e=>{if(!c.signal.aborted)setError(e instanceof Error?e.message:'자료 읽기 실패')});return()=>c.abort()},[month,retry]);useEffect(()=>{const c=new AbortController();Promise.all([json<MapDocument>(`/data/map/${period}_unique_course.json`,c.signal),json<BinDocument>(`/data/sim_bins/${period}_unique_course.json`,c.signal)]).then(([m,b])=>{setMap(m);setBins(b)}).catch(e=>{if(!c.signal.aborted)setError(e instanceof Error?e.message:'자료 읽기 실패')});return()=>c.abort()},[period,retry]);if(error)return <State><b>강좌 가격 자료를 불러오지 못했습니다</b><p>{error}</p><button className="primary" onClick={()=>{setError('');setRetry(v=>v+1)}}>다시 시도</button><a href="https://dvoucher.kspo.or.kr/main.do">공식 신청 사이트</a></State>;if(!meta||!lookups||!month||!catalog||catalog.observed_month!==month||!map||map.period!==period||!bins||bins.period!==period||!history)return <State><b>V:WHERE 자료를 불러오는 중...</b><p role="status">잠시만 기다려 주세요.</p></State>;return <div id="top"><Header mode={mode} setMode={setMode}/>{mode==='user'?<UserView meta={meta} catalog={catalog} lookups={lookups} month={month} setMonth={setMonth} region={region} setRegion={setRegion} sport={sport} setSport={setSport} latestReview={month===meta.observed_through&&meta.latest_month_low_volume_review}/>:<StaffView lookups={lookups} map={map} bins={bins} history={history} period={period} setPeriod={setPeriod} region={region} sport={sport} setSport={setSport}/>}<footer>자료: 장애인스포츠강좌이용권 강좌 가격 기록 · 게시가격 기준 · V:WHERE</footer></div>}
-function Header({mode,setMode}:{mode:'user'|'staff';setMode:(v:'user'|'staff')=>void}){return <><header><div className="wrap header-inner"><Brand/><nav aria-label="주요 메뉴">{mode==='user'?<><a className="active" href="#top">강좌 조합 찾기</a><button onClick={()=>setMode('staff')}>지역별 가격 현황</button></>:<><button onClick={()=>setMode('user')}>강좌 조합 찾기</button><a className="active" href="#map">지역별 가격 현황</a><a href="#simulation">한도 시뮬레이션</a><a href="#history">과거 관측</a></>}</nav><div className="mode-switch"><button className={mode==='user'?'active':''} onClick={()=>setMode('user')}>이용자</button><button className={mode==='staff'?'active':''} onClick={()=>setMode('staff')}>담당자</button></div><button className="hamburger" aria-label="메뉴">☰</button></div></header><div className="mobile-mode"><button className={mode==='user'?'active':''} onClick={()=>setMode('user')}>이용자</button><button className={mode==='staff'?'active':''} onClick={()=>setMode('staff')}>담당자</button></div></>}function State({children}:{children:React.ReactNode}){return <main className="state" role="alert"><Brand/>{children}</main>}
+import { useEffect, useState } from 'react'
+import './App.css'
+import { Brand } from './components/Brand'
+import { UserView } from './components/UserView'
+import { StaffView } from './components/StaffView'
+import type { BinDocument, Catalog, History, Lookups, MapDocument, Meta } from './types'
+
+type Mode = 'user' | 'staff'
+type MenuKey = 'courses' | 'map' | 'history' | 'simulation'
+type StaffSection = Exclude<MenuKey, 'courses'>
+type AggregateUnit = 'unique_course' | 'monthly_record'
+
+const staffTargets: Record<StaffSection, string> = {
+  map: 'map',
+  history: 'history',
+  simulation: 'simulation',
+}
+
+async function json<T>(url: string, signal: AbortSignal): Promise<T> {
+  const response = await fetch(url, { signal })
+  if (!response.ok) throw new Error(`자료를 불러오지 못했습니다 (${response.status})`)
+  return response.json() as Promise<T>
+}
+
+export default function App() {
+  const [mode, setMode] = useState<Mode>('user')
+  const [activeMenu, setActiveMenu] = useState<MenuKey>('courses')
+  const [pendingSection, setPendingSection] = useState<StaffSection>('map')
+  const [month, setMonth] = useState('')
+  const [region, setRegion] = useState('ALL')
+  const [sport, setSport] = useState('ALL')
+  const [period, setPeriod] = useState('2026')
+  const [unit, setUnit] = useState<AggregateUnit>('unique_course')
+  const [retry, setRetry] = useState(0)
+  const [meta, setMeta] = useState<Meta>()
+  const [lookups, setLookups] = useState<Lookups>()
+  const [catalog, setCatalog] = useState<Catalog>()
+  const [map, setMap] = useState<MapDocument>()
+  const [bins, setBins] = useState<BinDocument | null>()
+  const [history, setHistory] = useState<History>()
+  const [error, setError] = useState('')
+  useEffect(() => {
+    const controller = new AbortController()
+    Promise.all([
+      json<Meta>('/data/meta.json', controller.signal),
+      json<Lookups>('/data/lookups.json', controller.signal),
+      json<History>('/data/history.json', controller.signal),
+    ])
+      .then(([nextMeta, nextLookups, nextHistory]) => {
+        setMeta(nextMeta)
+        setLookups(nextLookups)
+        setHistory(nextHistory)
+        setMonth((value) => value || nextMeta.default_catalog_month)
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : '자료 읽기 실패')
+        }
+      })
+    return () => controller.abort()
+  }, [retry])
+
+  useEffect(() => {
+    if (!month) return
+    const controller = new AbortController()
+    json<Catalog>(`/data/catalog/${month}.json`, controller.signal)
+      .then(setCatalog)
+      .catch((cause) => {
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : '자료 읽기 실패')
+        }
+      })
+    return () => controller.abort()
+  }, [month, retry])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const binsRequest = period === 'all_observed'
+      ? Promise.resolve<BinDocument | null>(null)
+      : json<BinDocument>(`/data/sim_bins/${period}_${unit}.json`, controller.signal)
+    Promise.all([
+      json<MapDocument>(`/data/map/${period}_${unit}.json`, controller.signal),
+      binsRequest,
+    ])
+      .then(([nextMap, nextBins]) => {
+        setMap(nextMap)
+        setBins(nextBins)
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : '자료 읽기 실패')
+        }
+      })
+    return () => controller.abort()
+  }, [period, unit, retry])
+
+  useEffect(() => {
+    if (mode !== 'staff') return
+    const target = document.getElementById(staffTargets[pendingSection])
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [mode, pendingSection])
+
+  const navigate = (key: MenuKey) => {
+    if (key === 'courses') {
+      setActiveMenu('courses')
+      setMode('user')
+      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+      return
+    }
+    setActiveMenu(key)
+    setPendingSection(key)
+    if (mode === 'staff') {
+      window.requestAnimationFrame(() => {
+        document.getElementById(staffTargets[key])?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    } else {
+      setMode('staff')
+    }
+  }
+
+  if (error) {
+    return (
+      <State>
+        <b>강좌 가격 자료를 불러오지 못했습니다</b>
+        <p>{error}</p>
+        <button className="primary" onClick={() => { setError(''); setRetry((value) => value + 1) }}>다시 시도</button>
+        <a href="https://dvoucher.kspo.or.kr/main.do">공식 신청 사이트</a>
+      </State>
+    )
+  }
+
+  if (!meta || !lookups || !month || !catalog || catalog.observed_month !== month ||
+      !map || map.period !== period || bins === undefined || (bins && (bins.period !== period || bins.unit !== unit)) || !history) {
+    return <State><b>V:WHERE 자료를 불러오는 중...</b><p role="status">잠시만 기다려 주세요.</p></State>
+  }
+
+  return (
+    <div id="top">
+      <Header mode={mode} activeMenu={activeMenu} navigate={navigate} />
+      {mode === 'user' ? (
+        <UserView meta={meta} catalog={catalog} lookups={lookups} month={month}
+          setMonth={setMonth} region={region} setRegion={setRegion}
+          sport={sport} setSport={setSport}
+          latestReview={month === meta.observed_through && meta.latest_month_low_volume_review} />
+      ) : (
+        <StaffView lookups={lookups} map={map} bins={bins} history={history}
+          period={period} setPeriod={setPeriod} unit={unit} setUnit={setUnit}
+          region={region} setRegion={setRegion} sport={sport} setSport={setSport} />
+      )}
+      <footer>자료: 장애인스포츠강좌이용권 강좌 가격 기록 · 게시가격 기준 · V:WHERE</footer>
+    </div>
+  )
+}
+
+const menuItems: { key: MenuKey; label: string }[] = [
+  { key: 'courses', label: '강좌 조합 찾기' },
+  { key: 'map', label: '지역별 가격 현황' },
+  { key: 'history', label: '과거 가격 구성' },
+  { key: 'simulation', label: '한도 변경 시뮬레이터' },
+]
+
+function Header({ mode, activeMenu, navigate }: {
+  mode: Mode
+  activeMenu: MenuKey
+  navigate: (key: MenuKey) => void
+}) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const choose = (key: MenuKey) => {
+    setMenuOpen(false)
+    navigate(key)
+  }
+  return (
+    <>
+      <header>
+        <div className="wrap header-inner">
+          <Brand />
+          <nav aria-label="주요 메뉴">
+            {menuItems.map((item) => (
+              <button key={item.key} className={activeMenu === item.key ? 'active' : ''}
+                aria-current={activeMenu === item.key ? 'page' : undefined}
+                onClick={() => choose(item.key)}>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <div className="mode-switch" aria-label="화면 전환">
+            <button className={mode === 'user' ? 'active' : ''} onClick={() => choose('courses')}>이용자</button>
+            <button className={mode === 'staff' ? 'active' : ''} onClick={() => choose('map')}>담당자</button>
+          </div>
+          <button className="hamburger" aria-label="메뉴 열기" aria-expanded={menuOpen}
+            aria-controls="mobile-navigation" onClick={() => setMenuOpen((value) => !value)}>
+            {menuOpen ? '×' : '☰'}
+          </button>
+        </div>
+        <div id="mobile-navigation" className={menuOpen ? 'mobile-nav open' : 'mobile-nav'}>
+          {menuItems.map((item) => (
+            <button key={item.key} className={activeMenu === item.key ? 'active' : ''}
+              aria-current={activeMenu === item.key ? 'page' : undefined}
+              onClick={() => choose(item.key)}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </header>
+      <div className="mobile-mode" aria-label="화면 전환">
+        <button className={mode === 'user' ? 'active' : ''} onClick={() => choose('courses')}>이용자</button>
+        <button className={mode === 'staff' ? 'active' : ''} onClick={() => choose('map')}>담당자</button>
+      </div>
+    </>
+  )
+}
+
+function State({ children }: { children: React.ReactNode }) {
+  return <main className="state" role="alert"><Brand />{children}</main>
+}
