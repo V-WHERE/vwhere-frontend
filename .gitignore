@@ -1,0 +1,12 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+M0-M4/
+data/raw/
+data/interim/
+*.parquet
+*.zip
