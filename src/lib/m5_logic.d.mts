@@ -1,0 +1,1 @@
+import type{BinDocument,Catalog,CompanionResult,SimulationResult}from'../types';export function findCompanions(catalog:Catalog,selectedId:string,options?:{regionScope?:'same'|'all';sportKey?:string;limit?:number}):CompanionResult;export function simulateFromBins(binDocument:BinDocument,targetCap:number,options?:{regionKey?:string;sportKey?:string}):SimulationResult
