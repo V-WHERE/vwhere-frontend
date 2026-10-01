@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import boundaries from '../data/korea-provinces.json'
 import { groupProvinces, mapColor, MAP_COLORS, provinceCode, rankRegions, summarizeRegions } from '../lib/province_map.mjs'
+import { regionLabel } from '../lib/discovery.mjs'
 import type { Lookups, MapRecord } from '../types'
 import './ProvincePriceMap.css'
 
@@ -25,7 +26,7 @@ export function ProvincePriceMap({ selectedProvince, setSelectedProvince, rows, 
   const summary = summarizeRegions(detailRows)
   const unitLabel = unit === 'unique_course' ? '고유 강좌' : '월별 기록'
   const provinceName = boundaries.features.find((f) => f.code === active)?.name ?? '전국'
-  const regionName = (key: string) => lookups.regions.find((r) => r.region_key === key)?.region_name ?? `지역명 미제공 (${key})`
+  const regionName = (key: string) => regionLabel(key, lookups.regions)
   const detailName = region === 'ALL' ? provinceName : regionName(region)
   const ranked = rankRegions(provinceRows)
   const visibleRows = showAll ? ranked : ranked.slice(0, 3)
@@ -110,7 +111,7 @@ export function ProvincePriceMap({ selectedProvince, setSelectedProvince, rows, 
         <div className="province-table-head"><h4>{provinceName} 시군구별 비율</h4><span>{showAll ? '전체' : '상위 3곳'}</span></div>
         <div className="province-table-scroll"><table><caption className="sr-only">{provinceName} 시군구별 한도가격 비율과 {unitLabel} 수</caption><thead><tr><th scope="col">시군구</th><th scope="col">한도가격 비율</th><th scope="col">{unitLabel}</th></tr></thead><tbody>{visibleRows.map((r) => <tr key={r.region_key} className={r.region_key === region ? 'selected-district' : ''}><th scope="row"><button aria-pressed={r.region_key === region} onClick={() => onRegionChange(r.region_key)}>{regionName(r.region_key)}</button>{r.small_sample && <small>표본 적음</small>}</th><td>{percent(r.at_cap_ratio)}</td><td>{count(r.denominator)}건</td></tr>)}</tbody></table>{!visibleRows.length && <p className="province-empty">해당하는 시군구 기록이 없습니다.</p>}</div>
         {ranked.length > 3 && <button className="province-more" onClick={() => setShowAll(!showAll)}>{showAll ? '상위 3곳만 보기' : `시군구 전체 보기 (${ranked.length}곳)`} <span aria-hidden="true">→</span></button>}
-        <p className="province-table-note">시군구를 선택하면 아래 시뮬레이션 지역에도 적용됩니다.</p>
+        <p className="province-table-note">지도에서 선택한 시도·시군구가 아래 시뮬레이션에도 적용됩니다.</p>
       </aside>
     </div>
   )

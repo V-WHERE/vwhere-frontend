@@ -874,10 +874,7 @@ footer {
   .filters {
     padding: 25px 0;
   }
-  .filters .section-title,
-  .month-tabs {
-    display: none;
-  }
+  .month-tabs { overflow-x: auto; }
   .filter-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -910,13 +907,10 @@ footer {
   }
   .course-list {
     height: auto;
-    max-height: 260px;
+    max-height: 600px;
   }
-  .course {
-    display: none;
-  }
-  .course.active,
-  .course:first-child {
+  .course { display: block; }
+  .course.active {
     display: block;
     background: #e8f0fc;
     border-top: 2px solid var(--blue);
@@ -979,9 +973,7 @@ footer {
   .apply {
     display: block;
   }
-  .apply p {
-    display: none;
-  }
+  .apply p { display: block; }
   .apply .primary {
     display: block;
     margin-top: 18px;
@@ -1253,3 +1245,104 @@ header {height: 96px;}
 .sim-table:focus-visible {outline: 2px solid var(--blue); outline-offset: 4px;}
 
 .sim-row span:nth-child(4) i {display: block; margin-bottom: 5px; max-width: 100%;}
+
+/* Complete discovery flow: do not hide filters or records at narrow widths. */
+input,textarea {font:inherit;}
+input:focus-visible,textarea:focus-visible,summary:focus-visible {outline:3px solid #f29b62;outline-offset:3px;}
+.hero-search {max-width:530px;margin:24px 0 14px;}
+.hero-search label {display:block;font-size:16px;font-weight:700;margin-bottom:10px;}
+.hero-search > div {display:flex;gap:8px;}
+.hero-search input {flex:1;min-width:0;border:1px solid #a6b6d4;border-radius:8px;padding:14px;background:white;}
+.hero-search button {border:0;border-radius:8px;white-space:nowrap;}
+.hero-location-link {color:var(--blue);font-size:14px;text-underline-offset:4px;}
+.observation-note,.selection-storage,.list-count,.copy-notice {font-size:13px;line-height:1.7;color:#56657b;}
+.filters .filter-row,.staff-controls .filter-row {flex-wrap:wrap;gap:14px;}
+.filter-row label {font-size:14px;}
+.filter-row select {min-width:130px;max-width:100%;font-size:14px;}
+.filter-row > span:last-child {font-size:13px;}
+.discovery-options {display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin:18px 0;font-size:14px;}
+.discovery-options label {display:flex;align-items:center;gap:8px;min-height:44px;}
+.discovery-options select {padding:10px;border:1px solid var(--line);background:#fff;}
+.check-filter input {width:18px;height:18px;accent-color:var(--blue);}
+.filter-reset {background:white;color:var(--blue);border:1px solid #b7c7e3;border-radius:6px;padding:10px 14px;font-size:14px;}
+.national-context {border-top:1px solid var(--line);padding:14px 0;}
+.national-context summary {cursor:pointer;font-size:13px;color:#56657b;}
+.national-context .hero-stats {margin-top:20px;padding-top:0;border:0;}
+.national-context .hero-stats strong {font-size:26px;}
+.national-context .hero-stats span {font-size:13px;}
+.month-tabs {overflow-x:auto;}
+.month-tabs button {flex:0 0 auto;min-height:44px;}
+.month-tabs button[aria-pressed="true"] {color:var(--blue);font-weight:800;border-bottom:3px solid var(--blue);}
+.result-grid > div {min-width:0;}
+.course-list {max-height:740px;overflow-y:auto;}
+.course em {font-size:16px;line-height:1.5;}
+.course small,.candidate-table small,.budget-card small,.selected-courses small {font-size:13px;line-height:1.6;}
+.course span {gap:10px;flex-wrap:wrap;}
+.course b {font-size:13px;}
+.course strong {font-size:16px;}
+#course-selection,#course-filters,#course-results {scroll-margin-top:100px;}
+.selection-storage {margin:0 0 16px;}
+.combination-actions {display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:16px 0;}
+.combination-actions button {border:0;min-height:44px;border-radius:6px;}
+.combination-actions span {font-size:13px;color:#56657b;}
+.copy-fallback {display:grid;gap:8px;font-size:14px;}
+.copy-fallback textarea {width:100%;min-height:180px;padding:12px;line-height:1.6;}
+.selected-courses .facility-copy {margin-top:6px;min-height:32px;border:1px solid #b9c9e5;color:var(--blue);background:#fff;padding:4px 8px;font-size:12px;}
+.application-guide {margin-top:20px;padding:16px;background:#edf3fc;color:#233e6d;border-radius:8px;font-size:13px;line-height:1.8;}
+.application-guide ol {padding-left:18px;margin:8px 0 0;}
+.scope-badge {display:table;background:#edf3fc;border:1px solid #dce5f3;border-radius:6px;padding:8px 12px;color:#24447b;font-size:13px;line-height:1.7;}
+.simulator > p,.simulator > small {font-size:13px;line-height:1.8;}
+.sim-result-summary {padding:18px;border-left:4px solid var(--blue);background:#f0f5fc;color:#18366c!important;font-weight:700;font-size:16px!important;}
+.sim-explanation {font-size:13px;line-height:1.8;color:#56657b;}
+.sim-explanation p {margin:6px 0;}
+.sim-head,.sim-row {font-size:13px;min-width:940px;}
+.staff-intro > b,.map-head,.summary-grid small,.history .history-range,.history-grid > div > p,.history-summaries span,.history dl,.province-table-note {font-size:13px;line-height:1.7;}
+.history h3 {font-size:16px;}
+footer {font-size:13px;line-height:1.6;}
+.apply p {font-size:13px;line-height:1.7;}
+@media (max-width:720px) {
+  .hero-copy {display:block;font-size:14px;line-height:1.8;margin:12px 0;}
+  .hero-search {margin-top:18px;}
+  .hero-search input {width:100%;padding:12px;font-size:16px;}
+  .hero-search button {padding:12px;}
+  .filter-row,.staff-controls .filter-row {display:flex;align-items:flex-end;gap:12px;}
+  .filter-row label {flex:1 1 135px;min-width:0;}
+  .filter-row > span:last-child {display:block;flex-basis:100%;}
+  .filters .section-title {display:flex;}
+  .month-tabs {display:flex;margin-bottom:18px;}
+  .month-tabs button {padding:12px 16px;font-size:14px;}
+  .discovery-options {gap:8px 16px;align-items:flex-start;}
+  .discovery-options label:first-child {width:100%;}
+  .national-context .hero-stats {display:flex;flex-wrap:wrap;gap:18px;}
+  .national-context .hero-stats > div {border:0;padding:0;}
+  .course-list {max-height:600px;}
+  .course {display:block;padding:18px 14px;}
+  .selected-courses li {grid-template-columns:24px minmax(0,1fr);gap:8px;}
+  .selected-courses li > strong {grid-column:2;}
+  .selected-courses li > button {grid-column:2;justify-self:start;}
+  .application-guide {padding:12px;}
+  .budget-card .pair-totals {gap:12px;}
+  .budget-card .pair-totals strong {font-size:23px;}
+  .apply p {display:block;}
+  .simulator > p,.simulator > small {font-size:13px;}
+  .sim-head,.sim-row {font-size:13px;}
+  .target-tabs {justify-content:flex-start;overflow-x:auto;}
+  .target-tabs > * {flex-shrink:0;}
+  .scope-badge {display:block;}
+}
+@media (prefers-reduced-motion:reduce) {html {scroll-behavior:auto;} *,*::before,*::after {animation:none!important;transition:none!important;}}
+
+.mobile-month-picker,.mobile-selection-shortcut {display:none;}
+.budget-note,.budget-candidates .amount-line,.selected-apply,.budget-card-heading button,.selected-courses button,.candidate-table td,.candidate-table th {font-size:13px;}
+.budget-card-heading,.selected-courses li {font-size:14px;}
+.province-detail .boundary-note,.province-table-note,.province-detail .province-distribution small,.province-map-card .boundary-note {font-size:12px;}
+@media(max-width:720px) {
+  .month-tabs {display:none;}
+  .mobile-month-picker {display:grid;gap:8px;margin:16px 0;font-size:14px;font-weight:700;}
+  .mobile-month-picker select {padding:12px;border:1px solid #b7c7e3;background:white;color:#24447b;font-size:16px;}
+  .mobile-selection-shortcut {display:flex;position:sticky;bottom:12px;z-index:15;width:calc(100% - 32px);margin:0 auto 16px;padding:14px;border-radius:10px;background:#183b86;color:white;box-shadow:0 4px 16px #183b8633;justify-content:space-between;gap:8px;text-decoration:none;font-size:13px;}
+}
+
+.more,.course em,.section-title h2 {word-break:keep-all;overflow-wrap:anywhere;}
+
+.audience-hint,.audience-switch button small {font-size:12px;}

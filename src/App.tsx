@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import { readSelection, restoreIds, STORAGE_KEY, provinceOf } from './lib/discovery.mjs'
 import { Brand } from './components/Brand'
 import { UserView } from './components/UserView'
 import { StaffView } from './components/StaffView'
@@ -23,13 +24,18 @@ async function json<T>(url: string, signal: AbortSignal): Promise<T> {
 }
 
 export default function App() {
+  const [saved] = useState(() => { try { return readSelection(localStorage) } catch { return null } })
+  const [storageAvailable, setStorageAvailable] = useState(() => { try { localStorage.setItem('vwhere.storage-check','1'); localStorage.removeItem('vwhere.storage-check'); return true } catch { return false } })
+  const [selectedIds, setSelectedIds] = useState<string[]>(saved?.ids ?? [])
+  const [selectionNotice, setSelectionNotice] = useState('')
   const [mode, setMode] = useState<Mode>('user')
   const [activeMenu, setActiveMenu] = useState<MenuKey>('courses')
   const [pendingSection, setPendingSection] = useState<StaffSection | null>(null)
   const [month, setMonth] = useState('')
-  const [region, setRegion] = useState('ALL')
-  const [mapProvince, setMapProvince] = useState('ALL')
-  const [sport, setSport] = useState('ALL')
+  const [region, setRegion] = useState(saved?.region ?? 'ALL')
+  const [mapProvince, setMapProvince] = useState(provinceOf(saved?.region ?? 'ALL'))
+  const [sport, setSport] = useState(saved?.sport ?? 'ALL')
+  const [targetCap, setTargetCap] = useState(120000)
   const [period, setPeriod] = useState('2026')
   const [unit, setUnit] = useState<AggregateUnit>('unique_course')
   const [retry, setRetry] = useState(0)
@@ -51,7 +57,11 @@ export default function App() {
         setMeta(nextMeta)
         setLookups(nextLookups)
         setHistory(nextHistory)
-        setMonth((value) => value || nextMeta.default_catalog_month)
+        setMonth((value) => value || (nextMeta.available_catalog_months.some(m => m.month === saved?.month) ? saved!.month : nextMeta.default_catalog_month))
+        if (saved && !nextMeta.available_catalog_months.some(m => m.month === saved.month)) { setSelectedIds([]); setSelectionNotice('저장한 자료월이 제공되지 않아 기본월로 열었습니다.') }
+        setRegion(v => nextLookups.regions.some(r => r.region_key === v) ? v : 'ALL')
+        setSport(v => nextLookups.sports.some(s => s.sport_key === v) ? v : 'ALL')
+        setMapProvince(v => nextLookups.regions.some(r => provinceOf(r.region_key) === v) ? v : 'ALL')
       })
       .catch((cause) => {
         if (!controller.signal.aborted) {
@@ -59,13 +69,16 @@ export default function App() {
         }
       })
     return () => controller.abort()
-  }, [retry])
+  }, [retry, saved])
 
   useEffect(() => {
     if (!month) return
     const controller = new AbortController()
     json<Catalog>(`/data/catalog/${month}.json`, controller.signal)
-      .then(setCatalog)
+      .then(next => {
+        setCatalog(next)
+        setSelectedIds(ids => restoreIds(next, ids))
+      })
       .catch((cause) => {
         if (!controller.signal.aborted) {
           setError(cause instanceof Error ? cause.message : '자료 읽기 실패')
@@ -73,6 +86,22 @@ export default function App() {
       })
     return () => controller.abort()
   }, [month, retry])
+
+  useEffect(() => {
+    if (!catalog || catalog.observed_month !== month || !storageAvailable) return
+    if (JSON.stringify(restoreIds(catalog, selectedIds)) !== JSON.stringify(selectedIds)) return
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({version:1, month, ids:selectedIds, region, sport})) } catch {
+      // Browser storage can become unavailable after initial access (quota/security policy).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setStorageAvailable(false)
+    }
+  }, [catalog, month, selectedIds, region, sport, storageAvailable])
+
+  const changeMonth = (next:string) => {
+    if (next === month) return
+    if (selectedIds.length) setSelectionNotice('자료월을 바꿔 이전 월의 강좌 선택을 초기화했습니다.')
+    setSelectedIds([]); setMonth(next)
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -139,7 +168,7 @@ export default function App() {
   }
 
   if (!meta || !lookups || !month || !catalog || catalog.observed_month !== month ||
-      !map || map.period !== period || bins === undefined || (bins && (bins.period !== period || bins.unit !== unit)) || !history) {
+      !map || map.period !== period || map.unit !== unit || bins === undefined || (bins && (bins.period !== period || bins.unit !== unit)) || !history) {
     return <State><b>V:WHERE 자료를 불러오는 중...</b><p role="status">잠시만 기다려 주세요.</p></State>
   }
 
@@ -148,12 +177,15 @@ export default function App() {
       <Header mode={mode} activeMenu={activeMenu} navigate={navigate} switchMode={switchMode} />
       {mode === 'user' ? (
         <UserView meta={meta} catalog={catalog} lookups={lookups} month={month}
-          setMonth={setMonth} region={region} setRegion={setRegion}
+          setMonth={changeMonth} region={region} setRegion={setRegion}
+          province={mapProvince} setProvince={setMapProvince} selectedIds={selectedIds} setSelectedIds={setSelectedIds}
+          storageAvailable={storageAvailable} selectionNotice={selectionNotice}
           sport={sport} setSport={setSport}
           latestReview={month === meta.observed_through && meta.latest_month_low_volume_review} />
       ) : (
         <StaffView lookups={lookups} map={map} bins={bins} history={history}
           period={period} setPeriod={setPeriod} unit={unit} setUnit={setUnit}
+          target={targetCap} setTarget={setTargetCap}
           region={region} setRegion={setRegion} sport={sport} setSport={setSport}
           mapProvince={mapProvince} setMapProvince={setMapProvince} />
       )}
