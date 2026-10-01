@@ -3,6 +3,7 @@ import { buildCourseBudget } from "../lib/budget_builder.mjs";
 import type { CourseBudget } from "../lib/budget_builder.mjs";
 import { discoverCourses, partnerIds, regionLabel, selectionText, provinceOf } from "../lib/discovery.mjs";
 import { RegionFilter } from "./RegionFilter";
+import { CombinationShareCard } from "./CombinationShareCard";
 import type { Dispatch, SetStateAction } from "react";
 import type { Catalog, Lookups, Meta } from "../types";
 import { Runner, SectionTitle } from "./Brand";
@@ -243,9 +244,9 @@ export function UserView({
             <p className="selection-storage">{storageAvailable ? "선택한 조합은 이 기기에 자동 저장됩니다. 화면을 전환하거나 새로고침해도 이어서 볼 수 있어요." : "브라우저 저장 공간을 사용할 수 없습니다. 새로고침 전에 조합을 복사해 주세요."}</p>
             {!selected ? <div className="empty result-empty"><b>첫 강좌를 선택해 주세요</b><p>선택한 강좌의 가격과 남는 한도를 확인하고, 다음 강좌를 추가할 수 있습니다.</p></div> : <>
               <BudgetCard month={month} onCopyFacility={name => void copy(name,"시설명을")} cap={catalog.cap_krw} budget={budget} onRemove={removeCourse} onReset={() => {setSelectedIds([]);setCopyFallback("");setCopyNotice("")}} />
-              <div className="combination-actions"><button className="primary" onClick={() => void copy(selectionText(catalog,selectedIds,lookups.regions),"강좌 조합을")}>조합 복사·공유</button><span>강좌명·시설명·가격·자료월을 함께 복사</span></div>
               {copyNotice && <p role="status" className="copy-notice">{copyNotice}</p>}
-              {copyFallback && <label className="copy-fallback">복사할 내용<textarea readOnly value={copyFallback} onFocus={e => e.target.select()}/></label>}
+              {copyFallback && <label className="copy-fallback">복사할 시설명<textarea readOnly value={copyFallback} onFocus={e => e.target.select()}/></label>}
+              <CombinationShareCard text={selectionText(catalog,selectedIds,lookups.regions)} />
 
               <div className="next-course-heading"><h3>남은 한도로 추가할 강좌</h3><span>{budget.candidates.length.toLocaleString()}건</span></div>
               <p className="budget-note">{regionLabel(selected.region_key,lookups.regions)} · {month.slice(0,4)}년 {Number(month.slice(4))}월 게시가격 기준. 추가하면 남은 한도를 다시 계산합니다.</p>
