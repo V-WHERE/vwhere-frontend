@@ -19,7 +19,7 @@ test('기본월과 다른 월의 공개 카탈로그가 계약과 일치한다',
 
 test('배포용 강좌명에는 개인 결제·연락처 단서가 없다', () => {
   const months = read('meta.json').available_catalog_months
-  const privateTitlePattern = /개인\s*결[제재]|핸드폰|휴대폰|휴대전화|전화번호|연락처|뒷\s*4\s*자리|[가-힣][*＊][가-힣]|0(?:10|11|16|17|18|19)[- .]?\d{3,4}[- .]?\d{4}|운동발달\s+[가-힣]{2,4}(?:님)?$/i
+  const privateTitlePattern = /개인\s*결[제재]|결제자|결제창|핸드폰|휴대폰|휴대전화|전화번호|연락처|뒷\s*4\s*자리|[가-힣][*＊○◯●◉][가-힣]|(?:이현우|김태환님|안은영님)|0(?:10|11|16|17|18|19)[- .]?\d{3,4}[- .]?\d{4}|운동발달\s+[가-힣]{2,4}(?:님)?$/i
   for (const { month } of months) {
     const catalog = read(`catalog/${month}.json`)
     assert.ok(catalog.records.every((item) => !privateTitlePattern.test(item.course_name ?? '')), month)
