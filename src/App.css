@@ -655,8 +655,8 @@ td small {
 }
 .history-grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: 40px;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
 }
 .history h3 {
   font-size: 14px;
@@ -669,44 +669,84 @@ td small {
   line-height: 1.6;
 }
 .bars {
-  height: 250px;
-  border-bottom: 1px solid #777;
   display: flex;
-  align-items: flex-end;
-  justify-content: flex-start;
-  gap: 4px;
+  gap: 8px;
   overflow-x: auto;
+  padding: 0 0 12px;
 }
-.bars > div {
-  min-width: 58px;
-  padding: 0 4px;
-  height: 100%;
+.bar-item {
+  flex: 1 0 80px;
+  min-width: 80px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   align-items: center;
   text-align: center;
 }
-.bars > div.aggregate {
-  background: #f2f6fc;
-  border-left: 1px dashed #9aa9c8;
+.bar-ratio {
+  min-height: 24px;
+  margin-bottom: 8px;
+  color: var(--blue);
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
 }
-.bars > div > strong {
-  min-height: 34px;
-  max-width: 72px;
-  line-height: 1.25;
+.bar-track {
+  width: 42px;
+  height: 170px;
+  display: flex;
+  align-items: flex-end;
+  background: #edf1f7;
+  border-bottom: 1px solid #777;
 }
-.bars i {
-  display: block;
-  width: 34px;
+.bar-track i {
+  width: 100%;
   background: var(--blue);
-  margin-top: 5px;
 }
-.bars small {
-  font-size: 8px;
+.bar-details {
+  width: 100%;
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  font-size: 13px;
   color: var(--muted);
-  min-height: 32px;
-  line-height: 1.35;
+}
+.bar-details strong {
+  color: #252a32;
+  font-size: 16px;
+  white-space: nowrap;
+}
+.bar-details span {
+  min-height: 18px;
+  white-space: nowrap;
+}
+.history-summaries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+.history-summaries > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 12px;
+  padding: 16px;
+  background: #f2f6fc;
+  border-left: 3px solid var(--blue);
+}
+.history-summaries strong,
+.history-summaries b,
+.history-summaries span {
+  white-space: nowrap;
+}
+.history-summaries b {
+  color: var(--blue);
+  font-size: 18px;
+  text-align: right;
+}
+.history-summaries span {
+  color: var(--muted);
+  font-size: 13px;
 }
 dl > div {
   display: flex;
@@ -717,6 +757,18 @@ dl > div {
 dt {
   color: var(--blue);
   font-weight: 800;
+}
+.history dt,
+.history dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.history dd {
+  min-width: 64px;
+  text-align: right;
+  font-weight: 800;
+  white-space: nowrap;
 }
 .history p {
   font-size: 10px;
@@ -961,6 +1013,13 @@ footer {
   .history-grid {
     grid-template-columns: 1fr;
   }
+  .history-summaries {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(260px, 1fr);
+    grid-template-columns: none;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
   .tile-map {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1021,9 +1080,6 @@ nav button.active {
 .history,
 .simulator {
   scroll-margin-top: 84px;
-}
-.result-grid > div:first-child > .section-title {
-  margin-bottom: 0;
 }
 .result-grid > div:first-child > .course-list {
   border-top: 0;

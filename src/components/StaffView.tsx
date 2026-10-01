@@ -96,6 +96,8 @@ export function StaffView({
           value === "2024plus" ? 2027 : value === "all_observed" ? 2028 : Number(value);
         return order(a.year) - order(b.year);
       }),
+    annualYears = years.filter((item) => /^\d{4}$/.test(item.year)),
+    periodSummaries = years.filter((item) => !/^\d{4}$/.test(item.year)),
     tableRows = showAll
       ? rows
       : [...rows].sort((a, b) => b.at_cap_ratio - a.at_cap_ratio).slice(0, 10);
@@ -366,35 +368,40 @@ export function StaffView({
             <p className="history-range">
               공개 가격 기록의 2020년부터 2026년까지를 집계했습니다. 2024년 이후는 2024~2026년, 전체 관측 기간은 2020~2026년 합계입니다.
             </p>
-            <div className="bars">
-              {years.map((y) => (
-                <div
-                  className={y.year === "2024plus" || y.year === "all_observed" ? "aggregate" : ""}
-                  key={y.year}
-                >
-                  <b>{(y.ratio_at_cap * 100).toFixed(1)}%</b>
-                  <i
-                    style={{ height: `${Math.max(4, y.ratio_at_cap * 150)}px` }}
-                  />
-                  <strong>
-                    {y.year === "2024plus"
-                      ? "2024년 이후"
-                      : y.year === "all_observed"
-                        ? "전체 관측 기간"
-                        : `${y.year}년`}
-                  </strong>
-                  <small>
-                    한도 {y.cap_krw ? `${y.cap_krw / 10000}만 원` : "기간별 한도 다름"}
-                    <br />
+            <div className="bars" aria-label="2020년부터 2026년까지 월 한도와 같은 가격의 강좌 비율">
+              {annualYears.map((y) => (
+                <div className="bar-item" key={y.year}>
+                  <b className="bar-ratio">{(y.ratio_at_cap * 100).toFixed(1)}%</b>
+                  <div className="bar-track" aria-hidden="true">
+                    <i style={{ height: `${y.ratio_at_cap * 100}%` }} />
+                  </div>
+                  <div className="bar-details">
+                    <strong>{y.year}년</strong>
+                    <span>{y.cap_krw ? won(y.cap_krw) : "기간별 한도 다름"}</span>
+                    <span>
+                      {unit === "unique_course" ? "집계 강좌" : "집계 월별 기록"}{" "}
+                      {y.denominator.toLocaleString()}건
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="history-summaries">
+              {periodSummaries.map((summary) => (
+                <div key={summary.year}>
+                  <strong>{summary.year === "2024plus" ? "2024년 이후" : "전체 관측 기간"}</strong>
+                  <b>{(summary.ratio_at_cap * 100).toFixed(1)}%</b>
+                  <span>적용 한도 {summary.cap_krw ? won(summary.cap_krw) : "기간별 한도 다름"}</span>
+                  <span>
                     {unit === "unique_course" ? "집계 강좌" : "집계 월별 기록"}{" "}
-                    {y.denominator.toLocaleString()}건
-                  </small>
+                    {summary.denominator.toLocaleString()}건
+                  </span>
                 </div>
               ))}
             </div>
           </div>
           <div>
-            <h3>같은 강좌 ID의 가격 변화 (2023 → 2024)</h3>
+            <h3>동일 강좌의 가격 변화 (2023 → 2024)</h3>
             <dl>
               <div>
                 <dt>비교 대상</dt>
@@ -403,24 +410,24 @@ export function StaffView({
                 </dd>
               </div>
               <div>
-                <dt>가격 동결</dt>
-                <dd>
-                  {history.same_id_2023_2024.unchanged.toLocaleString()}개 ·
-                  상승 {history.same_id_2023_2024.up}개 · 하락{" "}
-                  {history.same_id_2023_2024.down}개
-                </dd>
+                <dt>가격 유지</dt>
+                <dd>{history.same_id_2023_2024.unchanged.toLocaleString()}개</dd>
               </div>
               <div>
-                <dt>2023 퇴장 ID</dt>
-                <dd>
-                  {history.same_id_2023_2024.exit_ids_2023.toLocaleString()}개
-                </dd>
+                <dt>가격 상승</dt>
+                <dd>{history.same_id_2023_2024.up.toLocaleString()}개</dd>
               </div>
               <div>
-                <dt>2024 신규 ID</dt>
-                <dd>
-                  {history.same_id_2023_2024.entry_ids_2024.toLocaleString()}개
-                </dd>
+                <dt>가격 하락</dt>
+                <dd>{history.same_id_2023_2024.down.toLocaleString()}개</dd>
+              </div>
+              <div>
+                <dt>2023년에만 관측된 강좌</dt>
+                <dd>{history.same_id_2023_2024.exit_ids_2023.toLocaleString()}개</dd>
+              </div>
+              <div>
+                <dt>2024년에만 관측된 강좌</dt>
+                <dd>{history.same_id_2023_2024.entry_ids_2024.toLocaleString()}개</dd>
               </div>
             </dl>
             <p>{history.interpretation}</p>
