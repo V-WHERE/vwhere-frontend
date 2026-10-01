@@ -1282,9 +1282,6 @@ input:focus-visible,textarea:focus-visible,summary:focus-visible {outline:3px so
 .course strong {font-size:16px;}
 #course-selection,#course-filters,#course-results {scroll-margin-top:100px;}
 .selection-storage {margin:0 0 16px;}
-.combination-actions {display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:16px 0;}
-.combination-actions button {border:0;min-height:44px;border-radius:6px;}
-.combination-actions span {font-size:13px;color:#56657b;}
 .copy-fallback {display:grid;gap:8px;font-size:14px;}
 .copy-fallback textarea {width:100%;min-height:180px;padding:12px;line-height:1.6;}
 .selected-courses .facility-copy {margin-top:6px;min-height:32px;border:1px solid #b9c9e5;color:var(--blue);background:#fff;padding:4px 8px;font-size:12px;}
