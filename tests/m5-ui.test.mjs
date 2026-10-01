@@ -17,6 +17,15 @@ test('기본월과 다른 월의 공개 카탈로그가 계약과 일치한다',
   }
 })
 
+test('배포용 강좌명에는 개인 결제·연락처 단서가 없다', () => {
+  const months = read('meta.json').available_catalog_months
+  const privateTitlePattern = /개인\s*결[제재]|핸드폰|휴대폰|휴대전화|전화번호|연락처|뒷\s*4\s*자리|[가-힣][*＊][가-힣]|0(?:10|11|16|17|18|19)[- .]?\d{3,4}[- .]?\d{4}|운동발달\s+[가-힣]{2,4}(?:님)?$/i
+  for (const { month } of months) {
+    const catalog = read(`catalog/${month}.json`)
+    assert.ok(catalog.records.every((item) => !privateTitlePattern.test(item.course_name ?? '')), month)
+  }
+})
+
 test('가격 조합은 한도 경계를 포함하고 동일 ID·다른 지역·날짜 비겹침을 제외한다', () => {
   const catalog = { observed_month: '202607', cap_krw: 110000, records: [
     { id: 'a', observed_month: '202607', region_key: 'x', sport_key: 's', price_krw: 70000, date_overlaps_observed_month: true },

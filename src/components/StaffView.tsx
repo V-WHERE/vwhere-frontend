@@ -10,6 +10,7 @@ import type {
 import { SectionTitle } from "./Brand";
 const names: Record<string, string> = {
     11: "서울",
+    12: "광주·전남",
     26: "부산",
     27: "대구",
     28: "인천",
@@ -216,7 +217,7 @@ export function StaffView({
       <section className="wrap map-section" id="map">
         <SectionTitle>한도붙음 지도와 수치</SectionTitle>
         <div className="map-head">
-          <span>시도 요약 · 시군구 경계 결합 전</span>
+          <span>시도 요약 · 광주·전남은 원천 지역코드상 통합 집계</span>
           <span>
             기간 {period} · 분모{" "}
             {unit === "unique_course" ? "고유 강좌" : "월별 기록"} · 적용 한도{" "}
@@ -234,7 +235,8 @@ export function StaffView({
                   <b>{s.name}</b>
                   <strong>{(s.ratio * 100).toFixed(1)}%</strong>
                   <small>
-                    n={s.den.toLocaleString()}
+                    {unit === "unique_course" ? "고유 강좌" : "월별 기록"}{" "}
+                    {s.den.toLocaleString()}건
                     {s.den < 30 ? " · 표본 적음" : ""}
                   </small>
                 </div>
