@@ -1205,8 +1205,8 @@ nav button.active {
 /* Audience-specific navigation and clearly labelled sliding mode control. */
 header {height: 96px;}
 .header-inner {gap: 20px;}
-.header-inner nav {gap: 18px; justify-content: center;}
-.header-inner nav button {align-items: flex-end; padding-bottom: 22px; border-bottom: 3px solid transparent;}
+.header-inner nav {gap: 18px; justify-content: center; align-items: flex-end;}
+.header-inner nav button {height: auto; display: block; line-height: 20px; padding: 16px 6px 8px; border-bottom: 3px solid transparent;}
 .header-inner nav button.active {border-bottom-color: var(--blue);}
 .desktop-audience {flex-shrink: 0; margin-left: auto;}
 .mobile-audience {display: none;}
