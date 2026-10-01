@@ -1156,10 +1156,9 @@ nav button.active {
 .budget-card-heading button,.selected-courses button{background:transparent;color:white;border:1px solid #aabddd;border-radius:6px;padding:6px 9px;font-size:11px;}
 .budget-card .price-bar{overflow:hidden;border-radius:6px;}
 .selected-courses{list-style:none;padding:0;margin:22px 0 0;border-top:1px solid #6179b4;}
-.selected-courses li{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:15px 0;border-bottom:1px solid #6179b4;font-size:12px;}
+.selected-courses li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:14px;align-items:start;padding:20px 0;border-bottom:1px solid #6179b4;font-size:12px;}
 .selected-courses li>div{overflow-wrap:anywhere;}
 .selected-courses small{display:block;color:#dbe5f9;font-size:10px;line-height:1.6;margin-top:4px;}
-.selected-courses li>strong{white-space:nowrap;}
 .selection-number{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#ffffff22;}
 .selected-apply{display:block;color:white;text-align:right;font-size:11px;margin-top:16px;text-decoration:underline;text-underline-offset:4px;}
 .next-course-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:26px;}
@@ -1182,9 +1181,6 @@ nav button.active {
  .budget-candidates td:nth-child(3)::before{content:'강좌 가격 ';font-size:11px;font-weight:400;color:#667085;}
  .budget-candidates .amount-line{justify-content:flex-start;gap:18px;font-size:13px;}
  .budget-candidates .amount-line span{width:72px;}
- .selected-courses li{grid-template-columns:22px minmax(0,1fr) auto;}
- .selected-courses li>strong{grid-column:2;}
- .selected-courses li>button{grid-column:3;grid-row:auto;min-height:36px;}
  .budget-card .pair-totals strong{font-size:clamp(18px,5vw,24px);overflow-wrap:anywhere;}
  .target-tabs>span{white-space:nowrap;flex-shrink:0;}
 }
@@ -1287,7 +1283,6 @@ input:focus-visible,textarea:focus-visible,summary:focus-visible {outline:3px so
 .combination-actions span {font-size:13px;color:#56657b;}
 .copy-fallback {display:grid;gap:8px;font-size:14px;}
 .copy-fallback textarea {width:100%;min-height:180px;padding:12px;line-height:1.6;}
-.selected-courses .facility-copy {margin-top:6px;min-height:32px;border:1px solid #b9c9e5;color:var(--blue);background:#fff;padding:4px 8px;font-size:12px;}
 .application-guide {margin-top:20px;padding:16px;background:#edf3fc;color:#233e6d;border-radius:8px;font-size:13px;line-height:1.8;}
 .application-guide ol {padding-left:18px;margin:8px 0 0;}
 .scope-badge {display:table;background:#edf3fc;border:1px solid #dce5f3;border-radius:6px;padding:8px 12px;color:#24447b;font-size:13px;line-height:1.7;}
@@ -1318,8 +1313,6 @@ footer {font-size:13px;line-height:1.6;}
   .course-list {max-height:600px;}
   .course {display:block;padding:18px 14px;}
   .selected-courses li {grid-template-columns:24px minmax(0,1fr);gap:8px;}
-  .selected-courses li > strong {grid-column:2;}
-  .selected-courses li > button {grid-column:2;justify-self:start;}
   .application-guide {padding:12px;}
   .budget-card .pair-totals {gap:12px;}
   .budget-card .pair-totals strong {font-size:23px;}
@@ -1346,3 +1339,24 @@ footer {font-size:13px;line-height:1.6;}
 .more,.course em,.section-title h2 {word-break:keep-all;overflow-wrap:anywhere;}
 
 .audience-hint,.audience-switch button small {font-size:12px;}
+
+/* Keep facility copying lightweight, aligned with the price instead of the course details. */
+.selected-course-info {min-width:0;}
+.selected-course-info > b {display:block;line-height:1.6;word-break:keep-all;}
+.selected-courses .selection-number {margin-top:2px;}
+.selected-course-actions {display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+.selected-course-actions > strong {font-size:16px;line-height:1.6;white-space:nowrap;}
+.selected-course-links {display:flex;align-items:center;justify-content:flex-end;gap:14px;}
+.selected-courses .facility-copy {
+  margin:0;padding:4px 0;min-height:36px;border:0;border-radius:0;
+  background:transparent;color:#fff;font-size:13px;font-weight:600;
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:5px;
+  white-space:nowrap;line-height:1.5;
+}
+.selected-courses .facility-copy:hover {color:#fff1d7;text-decoration-thickness:2px;}
+.selected-courses .facility-copy:focus-visible {outline:2px solid #ffc38b;outline-offset:4px;border-radius:2px;}
+.selected-courses .selected-course-remove {min-height:32px;padding:4px 8px;}
+@media (max-width:720px) {
+  .selected-course-actions {grid-column:2;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;}
+  .selected-course-links {margin-left:auto;}
+}
