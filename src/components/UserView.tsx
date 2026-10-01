@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { findCompanions } from "../lib/m5_logic.mjs";
+import { buildCourseBudget } from "../lib/budget_builder.mjs";
+import type { CourseBudget } from "../lib/budget_builder.mjs";
 import { compareNullableKo } from "../lib/sort.mjs";
-import type { Catalog, Companion, Lookups, Meta } from "../types";
+import type { Catalog, Lookups, Meta } from "../types";
 import { Runner, SectionTitle } from "./Brand";
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`,
   date = (s: string) => `${s.slice(4, 6)}.${s.slice(6)}`,
@@ -30,34 +31,29 @@ export function UserView({
   setSport,
   latestReview,
 }: Props) {
-  const [selectedId, setSelectedId] = useState(""),
-    [candidateSport, setCandidateSport] = useState("ALL"),
-    [visible, setVisible] = useState(8),
-    [chosenId, setChosenId] = useState("");
-  const eligible = useMemo(
-    () =>
-      catalog.records.filter(
-        (r) =>
-          r.date_overlaps_observed_month &&
-          r.price_krw > 0 &&
-          r.price_krw <= catalog.cap_krw &&
-          (region === "ALL" || r.region_key === region) &&
-          (sport === "ALL" || r.sport_key === sport),
-      ),
-    [catalog, region, sport],
-  );
-  const selected = eligible.find((r) => r.id === selectedId);
-  const full = selected
-    ? findCompanions(catalog, selected.id, {
-        sportKey: candidateSport,
-        limit: 10000,
-      })
-    : null;
-  const result = full
-    ? { ...full, candidates: full.candidates.slice(0, visible) }
-    : null;
-  const chosen =
-    result?.candidates.find((c) => c.id === chosenId) ?? result?.candidates[0];
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [candidateSport, setCandidateSport] = useState("ALL");
+  const [visible, setVisible] = useState(8);
+  const eligible = useMemo(() => catalog.records.filter(r =>
+    r.observed_month === catalog.observed_month && r.date_overlaps_observed_month &&
+    (r.cap_krw === undefined || r.cap_krw === catalog.cap_krw) &&
+    Number.isFinite(r.price_krw) && r.price_krw > 0 && (region === "ALL" || r.region_key === region) &&
+    (sport === "ALL" || r.sport_key === sport)), [catalog, region, sport]);
+  const budget = useMemo(() => buildCourseBudget(catalog, selectedIds), [catalog, selectedIds]);
+  const selected = budget.selected[0];
+  const filteredCandidates = budget.candidates.filter(r => candidateSport === "ALL" || r.sport_key === candidateSport);
+  const candidates = filteredCandidates.slice(0, visible);
+  const counts = budget.candidates.reduce<Record<string, number>>((a,r) => {
+    a[r.sport_key] = (a[r.sport_key] ?? 0) + 1; return a;
+  }, {});
+  const addCourse = (id:string) => {
+    setSelectedIds(ids => buildCourseBudget(catalog, ids).candidates.some(r => r.id === id) ? [...ids, id] : ids);
+    setCandidateSport("ALL"); setVisible(8);
+  };
+  const removeCourse = (id:string) => {
+    setSelectedIds(ids => ids.filter(value => value !== id));
+    setCandidateSport("ALL"); setVisible(8);
+  };
   const mm = meta.available_catalog_months.find((m) => m.month === month)!;
   const ratio = mm.under_cap_date_overlapping_records
     ? mm.selected_courses_with_same_region_price_partner /
@@ -74,26 +70,8 @@ export function UserView({
       ]),
     ).entries(),
   ].sort((a, b) => compareNullableKo(a[1], b[1]));
-  const counts = selected
-    ? catalog.records
-        .filter(
-          (r) =>
-            r.id !== selected.id &&
-            r.region_key === selected.region_key &&
-            r.date_overlaps_observed_month &&
-            r.price_krw > 0 &&
-            r.price_krw <= catalog.cap_krw - selected.price_krw,
-        )
-        .reduce<Record<string, number>>(
-          (a, r) => ({ ...a, [r.sport_key]: (a[r.sport_key] || 0) + 1 }),
-          {},
-        )
-    : {};
   const change = (setter: (v: string) => void, value: string) => {
-    setter(value);
-    setSelectedId("");
-    setChosenId("");
-    setVisible(8);
+    setSelectedIds([]); setCandidateSport("ALL"); setVisible(8); setter(value);
   };
   return (
     <>
@@ -105,8 +83,8 @@ export function UserView({
               <br />두 번째 운동까지
             </h1>
             <p className="hero-copy">
-              첫 강좌를 고르면 같은 시군구에서 두 가격의 합계가 월 한도 이하인
-              강좌를 찾아 드려요. 게시가격 기준의 가격 조합 후보입니다.
+              강좌를 고르고, 남은 한도 안에서 다음 운동을 더해 보세요.
+              같은 시군구의 게시가격을 합산해 함께 볼 수 있는 강좌를 찾아 드려요.
             </p>
             <div className="hero-stats">
               <div>
@@ -216,17 +194,16 @@ export function UserView({
             </SectionTitle>
             <div
               className={eligible.length ? "course-list" : "course-list empty-list"}
-              role="list"
+              aria-label="첫 강좌 목록"
             >
               {eligible.length ? (
                 eligible.map((r) => (
                   <button
-                    role="listitem"
-                    className={selectedId === r.id ? "course active" : "course"}
+                    aria-pressed={selectedIds[0] === r.id}
+                    className={selectedIds[0] === r.id ? "course active" : "course"}
                     key={r.id}
                     onClick={() => {
-                      setSelectedId(r.id);
-                      setChosenId("");
+                      setSelectedIds([r.id]);
                       setCandidateSport("ALL");
                       setVisible(8);
                     }}
@@ -241,7 +218,7 @@ export function UserView({
                       {date(r.course_end_date)}
                     </small>
                     <small>
-                      남는 한도 {won(catalog.cap_krw - r.price_krw)}
+                      {r.price_krw > catalog.cap_krw ? `한도 초과 ${won(r.price_krw - catalog.cap_krw)}` : `남는 한도 ${won(catalog.cap_krw - r.price_krw)}`}
                     </small>
                   </button>
                 ))
@@ -251,97 +228,32 @@ export function UserView({
             </div>
           </div>
           <div>
-            <SectionTitle>한도 안에서 함께 볼 강좌</SectionTitle>
-            {!selected ? (
-              <div className="empty result-empty">
-                <b>첫 강좌를 선택해 주세요</b>
-                <p>왼쪽에서 강좌를 고르면 가격상 함께 볼 수 있는 강좌를 확인할 수 있습니다.</p>
-              </div>
-            ) : result && chosen ? (
-              <>
-                <PairCard
-                  cap={catalog.cap_krw}
-                  first={selected}
-                  second={chosen}
-                />
+            <SectionTitle>선택한 강좌와 추가 조합</SectionTitle>
+            {!selected ? <div className="empty result-empty"><b>첫 강좌를 선택해 주세요</b><p>선택한 강좌의 가격과 남는 한도를 확인하고, 다음 강좌를 추가할 수 있습니다.</p></div> : <>
+              <BudgetCard cap={catalog.cap_krw} budget={budget} onRemove={removeCourse} onReset={() => setSelectedIds([])} />
+              <div className="next-course-heading"><h3>남은 한도로 추가할 강좌</h3><span>{budget.candidates.length.toLocaleString()}건</span></div>
+              <p className="budget-note">같은 시군구 · {month.slice(0,4)}년 {Number(month.slice(4))}월 게시가격 기준. 추가하면 남은 한도를 다시 계산합니다.</p>
+              {budget.candidates.length > 0 ? <>
                 <div className="candidate-tabs">
-                  <button
-                    className={candidateSport === "ALL" ? "active" : ""}
-                    onClick={() => setCandidateSport("ALL")}
-                  >
-                    전체 {Object.values(counts).reduce((a, b) => a + b, 0)}
-                  </button>
-                  {lookups.sports
-                    .filter((s) => counts[s.sport_key])
-                    .map((s) => (
-                      <button
-                        className={
-                          candidateSport === s.sport_key ? "active" : ""
-                        }
-                        key={s.sport_key}
-                        onClick={() => setCandidateSport(s.sport_key)}
-                      >
-                        {s.sport_name} {counts[s.sport_key]}
-                      </button>
-                    ))}
+                  <button className={candidateSport === "ALL" ? "active" : ""} onClick={() => {setCandidateSport("ALL");setVisible(8)}}>전체 {budget.candidates.length}</button>
+                  {lookups.sports.filter(s => counts[s.sport_key]).map(s => <button key={s.sport_key} className={candidateSport === s.sport_key ? "active" : ""} onClick={() => {setCandidateSport(s.sport_key);setVisible(8)}}>{s.sport_name} {counts[s.sport_key]}</button>)}
                 </div>
-                <div className="candidate-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>종목</th>
-                        <th>강좌 · 시설</th>
-                        <th>가격</th>
-                        <th>합계 / 남는 금액</th>
-                        <th>조합</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.candidates.map((c) => (
-                        <tr
-                          className={chosen.id === c.id ? "chosen" : ""}
-                          key={c.id}
-                        >
-                          <td>{c.sport_name}</td>
-                          <td>
-                            <b>{c.course_name}</b>
-                            <small>
-                              {c.facility_name}
-                              <br />
-                              {date(c.course_begin_date)} -{" "}
-                              {date(c.course_end_date)}
-                            </small>
-                          </td>
-                          <td>{won(c.price_krw)}</td>
-                          <td>
-                            {won(c.combined_price_krw)}
-                            <b>{won(c.remaining_cap_after_pair_krw)}</b>
-                          </td>
-                          <td>
-                            <button
-                              className={chosen.id === c.id ? "orange" : ""}
-                              onClick={() => setChosenId(c.id)}
-                            >
-                              {chosen.id === c.id ? "보는 중" : "조합 보기"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {visible < result.total_candidates && (
-                  <button
-                    className="more"
-                    onClick={() => setVisible((v) => v + 8)}
-                  >
-                    더보기 ({result.total_candidates - visible}건) ＋
-                  </button>
-                )}
-              </>
-            ) : (
-              <Empty />
-            )}
+                <div className="candidate-table budget-candidates"><table>
+                  <caption className="sr-only">현재 선택에 추가할 수 있는 강좌와 추가 후 가격 합계 및 남는 한도</caption>
+                  <thead><tr><th scope="col">종목</th><th scope="col">강좌 · 시설</th><th scope="col">강좌 가격</th><th scope="col">추가 후 금액</th><th scope="col">선택</th></tr></thead>
+                  <tbody>{candidates.map(c => <tr key={c.id}>
+                    <td>{c.sport_name}</td><td><b>{c.course_name}</b><small>{c.facility_name}<br/>{date(c.course_begin_date)} - {date(c.course_end_date)}</small></td>
+                    <td>{won(c.price_krw)}</td>
+                    <td><div className="amount-line"><span>합계</span><strong>{won(c.combined_price_krw)}</strong></div><div className="amount-line remaining"><span>남는 한도</span><strong>{won(c.remaining_cap_after_add_krw)}</strong></div></td>
+                    <td><button onClick={() => addCourse(c.id)} aria-label={`${c.course_name} 추가`}>＋ 추가</button></td>
+                  </tr>)}</tbody></table></div>
+                {visible < filteredCandidates.length && <button className="more" onClick={() => setVisible(v => v+8)}>더보기 ({filteredCandidates.length-visible}건) ＋</button>}
+              </> : <div className="empty budget-empty">
+                <b>{budget.over_cap_krw > 0 ? "선택한 강좌 가격이 월 한도를 초과합니다" : budget.remaining_cap_krw === 0 ? "선택한 강좌로 월 한도를 모두 채웠습니다" : "남은 한도에 맞는 추가 강좌가 없습니다"}</b>
+                <p>{budget.over_cap_krw > 0 ? "강좌 정보를 확인하거나 다른 첫 강좌를 선택해 보세요." : "선택한 강좌는 위에서 확인할 수 있습니다. 강좌를 빼거나 다른 첫 강좌를 선택해 보세요."}</p>
+              </div>}
+            </>}
+
           </div>
         </div>
       </section>
@@ -376,39 +288,19 @@ function Empty({ kind = "companion" }: { kind?: "first" | "companion" }) {
     </div>
   );
 }
-function PairCard({
-  cap,
-  first,
-  second,
-}: {
-  cap: number;
-  first: Catalog["records"][number];
-  second: Companion;
-}) {
-  return (
-    <div className="pair-card">
-      <div className="pair-totals">
-        <span>
-          두 강좌 가격 합계<strong>{won(second.combined_price_krw)}</strong>
-        </span>
-        <span>
-          한도 안에 남는 금액
-          <strong>{won(second.remaining_cap_after_pair_krw)}</strong>
-        </span>
-      </div>
-      <div className="price-bar">
-        <i style={{ width: `${(first.price_krw / cap) * 100}%` }} />
-        <i style={{ width: `${(second.price_krw / cap) * 100}%` }} />
-      </div>
-      <small>
-        0원 <span>월 한도 {won(cap)}</span>
-      </small>
-      <p>
-        ■ {first.course_name} {won(first.price_krw)}{" "}
-        <b>
-          ■ {second.course_name} {won(second.price_krw)}
-        </b>
-      </p>
+function BudgetCard({cap, budget, onRemove, onReset}: {cap:number;budget:CourseBudget;onRemove:(id:string)=>void;onReset:()=>void}) {
+  return <div className="pair-card budget-card">
+    <div className="budget-card-heading"><b>선택한 강좌 {budget.selected.length}개</b><button onClick={onReset}>선택 초기화</button></div>
+    <div className="pair-totals" role="status" aria-live="polite">
+      <span>선택한 강좌 가격 합계<strong>{won(budget.total_price_krw)}</strong></span>
+      <span>{budget.over_cap_krw > 0 ? "월 한도 초과액" : "추가로 쓸 수 있는 한도"}<strong>{won(budget.over_cap_krw || budget.remaining_cap_krw)}</strong></span>
     </div>
-  );
+    <div className="price-bar" aria-hidden="true"><i style={{width:`${Math.min(100,budget.total_price_krw/cap*100)}%`}} /></div>
+    <small>게시가격 합계 기준<span>월 한도 {won(cap)}</span></small>
+    <ol className="selected-courses">{budget.selected.map((r,i) => <li key={r.id}>
+      <span className="selection-number">{i+1}</span><div><b>{r.course_name}</b><small>{r.facility_name} · {r.sport_name}</small><small>{date(r.course_begin_date)} - {date(r.course_end_date)}</small></div>
+      <strong>{won(r.price_krw)}</strong>{i>0 && <button aria-label={`${r.course_name} 빼기`} onClick={() => onRemove(r.id)}>빼기</button>}
+    </li>)}</ol>
+    <a className="selected-apply" href={applyUrl} target="_blank" rel="noreferrer">공식 사이트에서 신청 정보 확인 ↗</a>
+  </div>;
 }

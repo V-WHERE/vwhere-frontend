@@ -41,36 +41,7 @@ export function Brand() {
   );
 }
 export function Runner() {
-  return (
-    <svg className="runner" viewBox="0 0 480 300" aria-hidden="true">
-      <ellipse cx="267" cy="271" rx="77" ry="8" fill="#dae4f6" />
-      <circle cx="352" cy="70" r="57" fill="#ffd9bc" />
-      <rect x="83" y="102" width="344" height="155" rx="78" fill="#eff4fc" />
-      <g fill="none" stroke="#c8d8f1" strokeWidth="2">
-        <rect x="45" y="69" width="410" height="202" rx="101" />
-        <rect x="68" y="87" width="366" height="166" rx="83" />
-        <rect x="88" y="104" width="326" height="132" rx="66" />
-      </g>
-      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M144 116h76M120 145h90" stroke="#ed7b2c" strokeWidth="7" />
-        <path d="M169 174h56" stroke="#e8b493" strokeWidth="6" />
-        <path d="M294 102 270 169" stroke="#25489b" strokeWidth="25" />
-        <path d="M286 113 252 137 237 177" stroke="#86a2da" strokeWidth="18" />
-        <path d="M292 116 329 149 369 125" stroke="#25489b" strokeWidth="18" />
-        <path
-          d="M270 169 326 194 310 252 331 262"
-          stroke="#25489b"
-          strokeWidth="23"
-        />
-        <path
-          d="M266 171 231 215 181 203 166 217"
-          stroke="#86a2da"
-          strokeWidth="22"
-        />
-      </g>
-      <circle cx="305" cy="57" r="20" fill="#25489b" />
-    </svg>
-  );
+  return <img className="runner runner-illustration" src="/images/runner-hero.png" width="1536" height="1024" alt="" aria-hidden="true" />;
 }
 export function SectionTitle({
   children,
