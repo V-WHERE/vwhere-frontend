@@ -1206,6 +1206,8 @@ nav button.active {
 header {height: 96px;}
 .header-inner {gap: 20px;}
 .header-inner nav {gap: 18px; justify-content: center;}
+.header-inner nav button {align-items: flex-end; padding-bottom: 22px; border-bottom: 3px solid transparent;}
+.header-inner nav button.active {border-bottom-color: var(--blue);}
 .desktop-audience {flex-shrink: 0; margin-left: auto;}
 .mobile-audience {display: none;}
 .audience-control {width: 238px;}
