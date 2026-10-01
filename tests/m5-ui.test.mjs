@@ -77,6 +77,20 @@ test('지도 데이터는 실제 0%와 표본 적음을 구분한다', () => {
   assert.ok(rows.every((item) => item.small_sample === (item.denominator < 30)))
 })
 
+test('과거 가격 구성은 개별 연도와 계약된 기간 합계를 포함한다', () => {
+  const history = read('history.json').national
+  for (const unit of ['unique_course', 'monthly_record']) {
+    const keys = Object.keys(history)
+      .filter((key) => key.startsWith(`${unit}:`))
+      .map((key) => key.split(':')[1])
+    assert.deepEqual(keys.filter((key) => /^\d{4}$/.test(key)).sort(), ['2020', '2021', '2022', '2023', '2024', '2025', '2026'])
+    assert.ok(keys.includes('2024plus'))
+    assert.ok(keys.includes('all_observed'))
+    assert.ok(history[`${unit}:2024plus`].denominator > 0)
+    assert.ok(history[`${unit}:all_observed`].denominator > 0)
+  }
+})
+
 test('지역 이름 정렬은 null과 undefined를 뒤로 보낸다', () => {
   const names = ['마포구', null, '강남구', undefined, '']
   names.sort(compareNullableKo)
