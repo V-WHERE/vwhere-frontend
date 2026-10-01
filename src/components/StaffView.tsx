@@ -1,36 +1,14 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { simulateFromBins } from "../lib/m5_logic.mjs";
 import type {
   BinDocument,
   History,
   Lookups,
   MapDocument,
-  MapRecord,
 } from "../types";
 import { SectionTitle } from "./Brand";
-const names: Record<string, string> = {
-    11: "서울",
-    12: "광주·전남",
-    26: "부산",
-    27: "대구",
-    28: "인천",
-    29: "광주",
-    30: "대전",
-    31: "울산",
-    36: "세종",
-    41: "경기",
-    42: "강원",
-    43: "충북",
-    44: "충남",
-    45: "전북",
-    46: "전남",
-    47: "경북",
-    48: "경남",
-    50: "제주",
-    51: "강원",
-    52: "전북",
-  },
-  won = (n: number) => `${n.toLocaleString()}원`;
+import { ProvincePriceMap } from "./ProvincePriceMap";
+const won = (n: number) => `${n.toLocaleString()}원`;
 type Unit = "unique_course" | "monthly_record";
 type Props = {
   lookups: Lookups;
@@ -41,6 +19,8 @@ type Props = {
   setPeriod: (v: string) => void;
   unit: Unit;
   setUnit: (v: Unit) => void;
+  mapProvince: string;
+  setMapProvince: (v: string) => void;
   region: string;
   setRegion: (v: string) => void;
   sport: string;
@@ -55,33 +35,16 @@ export function StaffView({
   setPeriod,
   unit,
   setUnit,
+  mapProvince,
+  setMapProvince,
   region,
   setRegion,
   sport,
   setSport,
 }: Props) {
-  const [target, setTarget] = useState(120000),
-    [showAll, setShowAll] = useState(false);
+  const [target, setTarget] = useState(120000);
   const rows = map.records.filter(
     (r) => r.sport_key === sport && r.region_key !== "ALL",
-  );
-  const sido = useMemo(
-    () =>
-      Object.entries(
-        rows.reduce<Record<string, { den: number; at: number }>>((a, r) => {
-          const k = r.region_key.split("-")[0];
-          a[k] ??= { den: 0, at: 0 };
-          a[k].den += r.denominator;
-          a[k].at += r.at_cap_count;
-          return a;
-        }, {}),
-      ).map(([code, v]) => ({
-        code,
-        name: names[code] ?? code,
-        ...v,
-        ratio: v.den ? v.at / v.den : 0,
-      })),
-    [rows],
   );
   const national = map.records.find(
       (r) => r.region_key === "ALL" && r.sport_key === sport,
@@ -98,10 +61,7 @@ export function StaffView({
         return order(a.year) - order(b.year);
       }),
     annualYears = years.filter((item) => /^\d{4}$/.test(item.year)),
-    periodSummaries = years.filter((item) => !/^\d{4}$/.test(item.year)),
-    tableRows = showAll
-      ? rows
-      : [...rows].sort((a, b) => b.at_cap_ratio - a.at_cap_ratio).slice(0, 10);
+    periodSummaries = years.filter((item) => !/^\d{4}$/.test(item.year));
   return (
     <main className="staff">
       <section className="staff-intro wrap">
@@ -177,7 +137,7 @@ export function StaffView({
         </div>
         <div className="summary-grid">
           <Metric
-            label={`한도가(${national?.cap_krw ? won(national.cap_krw) : "혼합 한도"}) 강좌`}
+            label={`전국 한도가(${national?.cap_krw ? won(national.cap_krw) : "혼합 한도"}) 강좌`}
             value={
               national
                 ? `${(national.at_cap_ratio * 100).toFixed(1)}%`
@@ -190,7 +150,7 @@ export function StaffView({
             }
           />
           <Metric
-            label="한도 미만"
+            label="전국 한도 미만"
             value={national?.below_cap_count.toLocaleString() ?? "—"}
             sub={
               national
@@ -199,7 +159,7 @@ export function StaffView({
             }
           />
           <Metric
-            label="한도 초과"
+            label="전국 한도 초과"
             value={national?.over_cap_count.toLocaleString() ?? "—"}
             sub={
               national
@@ -224,70 +184,7 @@ export function StaffView({
             {national?.cap_krw ? won(national.cap_krw) : "기간별 한도"}
           </span>
         </div>
-        <div className="map-grid">
-          <div>
-            <div className="tile-map">
-              {sido.map((s) => (
-                <div
-                  className={`tile level-${Math.min(4, Math.floor(s.ratio * 5))} ${s.den < 30 ? "small" : ""}`}
-                  key={s.code}
-                >
-                  <b>{s.name}</b>
-                  <strong>{(s.ratio * 100).toFixed(1)}%</strong>
-                  <small>
-                    {unit === "unique_course" ? "고유 강좌" : "월별 기록"}{" "}
-                    {s.den.toLocaleString()}건
-                    {s.den < 30 ? " · 표본 적음" : ""}
-                  </small>
-                </div>
-              ))}
-            </div>
-            <div className="legend">
-              <span>낮음</span>
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <span>높음</span>
-              <b>
-                ⋯ 표본 적음 (분모 30 미만) · 기록 없음은 미표시 · 0.0%는 실제
-                기록
-              </b>
-            </div>
-          </div>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>시군구</th>
-                  <th>분모</th>
-                  <th>한도가</th>
-                  <th>미만</th>
-                  <th>초과</th>
-                  <th>한도가 비율</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableRows.map((r) => (
-                  <MapRow
-                    key={r.region_key}
-                    row={r}
-                    name={
-                      lookups.regions.find((x) => x.region_key === r.region_key)
-                        ?.region_name ?? r.region_key
-                    }
-                  />
-                ))}
-              </tbody>
-            </table>
-            <button className="more" onClick={() => setShowAll((v) => !v)}>
-              {showAll
-                ? "상위 10개만 보기"
-                : `전체 지역 확인 (${rows.length}곳)`}
-            </button>
-          </div>
-        </div>
+        <ProvincePriceMap selectedProvince={mapProvince} setSelectedProvince={setMapProvince} rows={rows} lookups={lookups} unit={unit} region={region} onRegionChange={setRegion} />
       </section>
       <section className="wrap simulator" id="simulation">
         <SectionTitle
@@ -454,23 +351,5 @@ function Metric({
       <strong>{value}</strong>
       <small>{sub}</small>
     </div>
-  );
-}
-function MapRow({ row, name }: { row: MapRecord; name: string }) {
-  return (
-    <tr>
-      <td>
-        {name}
-        {row.small_sample && <small>표본 적음</small>}
-      </td>
-      <td>{row.denominator}</td>
-      <td>{row.at_cap_count}</td>
-      <td>{row.below_cap_count}</td>
-      <td>{row.over_cap_count}</td>
-      <td>
-        <i style={{ width: `${row.at_cap_ratio * 100}%` }} />
-        <b>{(row.at_cap_ratio * 100).toFixed(1)}%</b>
-      </td>
-    </tr>
   );
 }
