@@ -187,7 +187,7 @@ function Header({ mode, activeMenu, navigate }: {
             <button className={mode === 'user' ? 'active' : ''} onClick={() => choose('courses')}>이용자</button>
             <button className={mode === 'staff' ? 'active' : ''} onClick={() => choose('map')}>담당자</button>
           </div>
-          <button className="hamburger" aria-label="메뉴 열기" aria-expanded={menuOpen}
+          <button className="hamburger" aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'} aria-expanded={menuOpen}
             aria-controls="mobile-navigation" onClick={() => setMenuOpen((value) => !value)}>
             {menuOpen ? '×' : '☰'}
           </button>
