@@ -300,8 +300,19 @@ function BudgetCard({cap, budget, onRemove, onReset, month, onCopyFacility}: {ca
     <div className="price-bar" aria-hidden="true"><i style={{width:`${Math.min(100,budget.total_price_krw/cap*100)}%`}} /></div>
     <small>{month.slice(0,4)}년 {Number(month.slice(4))}월 게시가격 기준<span>월 한도 {won(cap)}</span></small>
     <ol className="selected-courses">{budget.selected.map((r,i) => <li key={r.id}>
-      <span className="selection-number">{i+1}</span><div><b>{r.course_name}</b><small>{r.facility_name} · {r.sport_name}</small><button className="facility-copy" onClick={() => onCopyFacility(r.facility_name)} aria-label={`${r.facility_name} 시설명 복사`}>시설명 복사</button><small>{date(r.course_begin_date)} - {date(r.course_end_date)}</small></div>
-      <strong>{won(r.price_krw)}</strong>{i>0 && <button aria-label={`${r.course_name} 빼기`} onClick={() => onRemove(r.id)}>빼기</button>}
+      <span className="selection-number">{i+1}</span>
+      <div className="selected-course-info">
+        <b>{r.course_name}</b>
+        <small>{r.facility_name}</small>
+        <small>{r.sport_name} · {date(r.course_begin_date)} - {date(r.course_end_date)}</small>
+      </div>
+      <div className="selected-course-actions">
+        <strong>{won(r.price_krw)}</strong>
+        <div className="selected-course-links">
+          <button type="button" className="facility-copy" onClick={() => onCopyFacility(r.facility_name)} aria-label={`${r.facility_name} 시설명 복사`}>시설명 복사</button>
+          {i>0 && <button type="button" className="selected-course-remove" aria-label={`${r.course_name} 빼기`} onClick={() => onRemove(r.id)}>빼기</button>}
+        </div>
+      </div>
     </li>)}</ol>
     <div className="application-guide"><b>공식 사이트에서 이어서 확인하기</b><ol><li>위 강좌의 ‘시설명 복사’를 누르세요.</li><li>공식 사이트의 수강신청 메뉴에서 지역과 시설명을 검색하세요.</li><li>모집 여부·수업시간·최종 가격을 확인하고 신청하세요.</li></ol></div>
     <a className="selected-apply" href={applyUrl} target="_blank" rel="noreferrer">공식 사이트에서 신청 정보 확인 ↗</a>
