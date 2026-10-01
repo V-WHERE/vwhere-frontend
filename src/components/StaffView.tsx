@@ -62,6 +62,8 @@ export function StaffView({
       }),
     annualYears = years.filter((item) => /^\d{4}$/.test(item.year)),
     periodSummaries = years.filter((item) => !/^\d{4}$/.test(item.year));
+  const itemUnit = unit === "unique_course" ? "개" : "건";
+  const itemLabel = unit === "unique_course" ? "강좌 수" : "월별 기록 수";
   return (
     <main className="staff">
       <section className="staff-intro wrap">
@@ -218,24 +220,29 @@ export function StaffView({
                 : (lookups.regions.find((r) => r.region_key === region)
                     ?.region_name ?? region)}{" "}
               {unit === "unique_course" ? "고유 강좌" : "월별 기록"}{" "}
-              {sim.compared_records.toLocaleString()}개 기준. 현재 한도{" "}
-              {won(sim.base_cap_krw)}에서 한도 내 강좌는{" "}
-              {sim.baseline_eligible_count.toLocaleString()}개입니다.
+              {sim.compared_records.toLocaleString()}{itemUnit} 기준. 현재 한도{" "}
+              {won(sim.base_cap_krw)}에서 한도 내 {unit === "unique_course" ? "강좌는" : "월별 기록은"}{" "}
+              {sim.baseline_eligible_count.toLocaleString()}{itemUnit}입니다.
+            </p>
+            <p className="sim-explanation">
+              월 한도를 {won(target)}으로 바꿨을 때, 강좌가격이 어떻게 움직인다고 가정하느냐에 따라 한도 안에 들어오는 {itemLabel}를 비교합니다.
+              ‘절반 상승’은 모든 강좌가격에 한도 증가분의 50%를, ‘전액 상승’은 100%를 더한 경우입니다.
+              ‘새로 한도 내’는 현재 한도를 초과했지만 변경 후 한도 안에 들어오는 {itemLabel}입니다.
             </p>
             <div className="sim-table">
               <div className="sim-head">
                 <span>가격 반응 가정</span>
-                <span>가정 상승액</span>
-                <span>한도 내 강좌</span>
-                <span>비율</span>
-                <span>새로 한도 내</span>
-                <span>새 한도와 같은 가격</span>
+                <span>강좌별 가정 인상액</span>
+                <span>변경 한도 내 {itemLabel}</span>
+                <span>전체 대비 한도 내 비율</span>
+                <span>새로 한도 내에 들어온 {itemLabel}</span>
+                <span>변경 한도와 가격이 같은 {itemLabel}</span>
               </div>
               {sim.scenarios.map((s, i) => (
                 <div className="sim-row" key={s.key}>
                   <b>■ {["가격 동결", "절반 상승", "전액 상승"][i]}</b>
                   <span>+{won(s.assumed_price_increase_krw)}</span>
-                  <strong>{s.eligible_count.toLocaleString()}</strong>
+                  <strong>{s.eligible_count.toLocaleString()}{itemUnit}</strong>
                   <span>
                     <i
                       style={{
@@ -245,8 +252,8 @@ export function StaffView({
                     {((s.eligible_count / s.compared_records) * 100).toFixed(1)}
                     %
                   </span>
-                  <span>+{s.newly_eligible_count.toLocaleString()}</span>
-                  <span>{s.at_new_cap_count.toLocaleString()}</span>
+                  <span>+{s.newly_eligible_count.toLocaleString()}{itemUnit}</span>
+                  <span>{s.at_new_cap_count.toLocaleString()}{itemUnit}</span>
                 </div>
               ))}
             </div>
