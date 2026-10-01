@@ -1237,3 +1237,19 @@ header {height: 96px;}
   .mobile-nav button.active {color: var(--blue); border-left: 4px solid var(--blue);}
 }
 @media (prefers-reduced-motion: reduce) {.audience-slider {transition: none;}}
+
+/* Keep descriptive simulation headings on two intentional, readable lines. */
+.sim-table {overflow-x: auto;}
+.sim-head,.sim-row {
+  grid-template-columns: 1fr .95fr 1fr 1.5fr 1.25fr 1.45fr;
+  column-gap: 14px;
+  min-width: 820px;
+  padding: 16px 14px;
+}
+.sim-head {font-weight: 600; color: #3c485b;}
+.sim-head .sim-heading-line {display: block; white-space: nowrap; line-height: 1.65;}
+.sim-row {min-height: 68px; font-variant-numeric: tabular-nums;}
+.sim-row>span,.sim-row>strong {white-space: nowrap;}
+.sim-table:focus-visible {outline: 2px solid var(--blue); outline-offset: 4px;}
+
+.sim-row span:nth-child(4) i {display: block; margin-bottom: 5px; max-width: 100%;}
