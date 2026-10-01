@@ -120,7 +120,7 @@ export function UserView({
           <Runner />
         </div>
       </section>
-      <section className="filters wrap">
+      <section className="filters wrap" id="course-filters">
         <SectionTitle>관측월 선택</SectionTitle>
         <div className="month-tabs" role="tablist" aria-label="자료월">
           {meta.available_catalog_months.map((m) => (
@@ -184,7 +184,7 @@ export function UserView({
           </div>
         )}
       </section>
-      <section className="results">
+      <section className="results" id="course-selection">
         <div className="wrap result-grid">
           <div>
             <SectionTitle

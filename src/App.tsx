@@ -6,8 +6,8 @@ import { StaffView } from './components/StaffView'
 import type { BinDocument, Catalog, History, Lookups, MapDocument, Meta } from './types'
 
 type Mode = 'user' | 'staff'
-type MenuKey = 'courses' | 'map' | 'history' | 'simulation'
-type StaffSection = Exclude<MenuKey, 'courses'>
+type MenuKey = 'courses' | 'selection' | 'map' | 'history' | 'simulation'
+type StaffSection = Exclude<MenuKey, 'courses' | 'selection'>
 type AggregateUnit = 'unique_course' | 'monthly_record'
 
 const staffTargets: Record<StaffSection, string> = {
@@ -25,7 +25,7 @@ async function json<T>(url: string, signal: AbortSignal): Promise<T> {
 export default function App() {
   const [mode, setMode] = useState<Mode>('user')
   const [activeMenu, setActiveMenu] = useState<MenuKey>('courses')
-  const [pendingSection, setPendingSection] = useState<StaffSection>('map')
+  const [pendingSection, setPendingSection] = useState<StaffSection | null>(null)
   const [month, setMonth] = useState('')
   const [region, setRegion] = useState('ALL')
   const [mapProvince, setMapProvince] = useState('ALL')
@@ -96,16 +96,16 @@ export default function App() {
   }, [period, unit, retry])
 
   useEffect(() => {
-    if (mode !== 'staff') return
+    if (mode !== 'staff' || !pendingSection) return
     const target = document.getElementById(staffTargets[pendingSection])
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [mode, pendingSection])
 
   const navigate = (key: MenuKey) => {
-    if (key === 'courses') {
-      setActiveMenu('courses')
+    if (key === 'courses' || key === 'selection') {
+      setActiveMenu(key)
       setMode('user')
-      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+      window.requestAnimationFrame(() => document.getElementById(key === 'courses' ? 'course-filters' : 'course-selection')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
       return
     }
     setActiveMenu(key)
@@ -117,6 +117,14 @@ export default function App() {
     } else {
       setMode('staff')
     }
+  }
+
+  const switchMode = (next: Mode) => {
+    if (next === mode) return
+    setPendingSection(null)
+    setMode(next)
+    setActiveMenu(next === 'user' ? 'courses' : 'map')
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
   }
 
   if (error) {
@@ -137,7 +145,7 @@ export default function App() {
 
   return (
     <div id="top">
-      <Header mode={mode} activeMenu={activeMenu} navigate={navigate} />
+      <Header mode={mode} activeMenu={activeMenu} navigate={navigate} switchMode={switchMode} />
       {mode === 'user' ? (
         <UserView meta={meta} catalog={catalog} lookups={lookups} month={month}
           setMonth={setMonth} region={region} setRegion={setRegion}
@@ -154,19 +162,25 @@ export default function App() {
   )
 }
 
-const menuItems: { key: MenuKey; label: string }[] = [
-  { key: 'courses', label: '강좌 조합 찾기' },
+const userMenuItems: { key: MenuKey; label: string }[] = [
+  { key: 'courses', label: '강좌 찾기' },
+  { key: 'selection', label: '내 강좌 조합' },
+]
+const staffMenuItems: { key: MenuKey; label: string }[] = [
   { key: 'map', label: '지역별 가격 현황' },
   { key: 'history', label: '과거 가격 구성' },
   { key: 'simulation', label: '한도 변경 시뮬레이터' },
 ]
 
-function Header({ mode, activeMenu, navigate }: {
+function Header({ mode, activeMenu, navigate, switchMode }: {
   mode: Mode
   activeMenu: MenuKey
   navigate: (key: MenuKey) => void
+  switchMode: (mode: Mode) => void
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuItems = mode === 'user' ? userMenuItems : staffMenuItems
+  const changeMode = (next: Mode) => { setMenuOpen(false); switchMode(next) }
   const choose = (key: MenuKey) => {
     setMenuOpen(false)
     navigate(key)
@@ -176,7 +190,7 @@ function Header({ mode, activeMenu, navigate }: {
       <header>
         <div className="wrap header-inner">
           <Brand />
-          <nav aria-label="주요 메뉴">
+          <nav aria-label={mode === "user" ? "이용자 메뉴" : "담당자 메뉴"}>
             {menuItems.map((item) => (
               <button key={item.key} className={activeMenu === item.key ? 'active' : ''}
                 aria-current={activeMenu === item.key ? 'page' : undefined}
@@ -185,10 +199,7 @@ function Header({ mode, activeMenu, navigate }: {
               </button>
             ))}
           </nav>
-          <div className="mode-switch" aria-label="화면 전환">
-            <button className={mode === 'user' ? 'active' : ''} onClick={() => choose('courses')}>이용자</button>
-            <button className={mode === 'staff' ? 'active' : ''} onClick={() => choose('map')}>담당자</button>
-          </div>
+          <div className="desktop-audience"><AudienceSwitch mode={mode} onChange={changeMode} /></div>
           <button className="hamburger" aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'} aria-expanded={menuOpen}
             aria-controls="mobile-navigation" onClick={() => setMenuOpen((value) => !value)}>
             {menuOpen ? '×' : '☰'}
@@ -204,12 +215,24 @@ function Header({ mode, activeMenu, navigate }: {
           ))}
         </div>
       </header>
-      <div className="mobile-mode" aria-label="화면 전환">
-        <button className={mode === 'user' ? 'active' : ''} onClick={() => choose('courses')}>이용자</button>
-        <button className={mode === 'staff' ? 'active' : ''} onClick={() => choose('map')}>담당자</button>
-      </div>
+      <div className="mobile-audience"><AudienceSwitch mode={mode} onChange={changeMode} /></div>
     </>
   )
+}
+
+function AudienceSwitch({mode, onChange}: {mode: Mode; onChange: (mode: Mode) => void}) {
+  return <div className="audience-control">
+    <span className="audience-hint">목적에 맞게 화면 전환 <span aria-hidden="true">↔</span></span>
+    <div className={`audience-switch ${mode}`} role="group" aria-label="이용 목적에 따른 화면 선택">
+      <span className="audience-slider" aria-hidden="true" />
+      <button type="button" aria-pressed={mode === 'user'} onClick={() => onChange('user')}>
+        <strong>{mode === 'user' && <span aria-hidden="true">✓ </span>}이용자</strong><small>강좌 찾기·조합</small>
+      </button>
+      <button type="button" aria-pressed={mode === 'staff'} onClick={() => onChange('staff')}>
+        <strong>{mode === 'staff' && <span aria-hidden="true">✓ </span>}담당자</strong><small>가격·정책 분석</small>
+      </button>
+    </div>
+  </div>
 }
 
 function State({ children }: { children: React.ReactNode }) {
