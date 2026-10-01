@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { simulateFromBins } from "../lib/m5_logic.mjs";
 import type {
   BinDocument,
@@ -8,9 +8,12 @@ import type {
 } from "../types";
 import { SectionTitle } from "./Brand";
 import { ProvincePriceMap } from "./ProvincePriceMap";
+import { RegionFilter } from "./RegionFilter";
+import { provinceOf, provinceNames, regionLabel, simulationSummary, provinceBins } from "../lib/discovery.mjs";
 const won = (n: number) => `${n.toLocaleString()}원`;
 type Unit = "unique_course" | "monthly_record";
 type Props = {
+  target:number; setTarget:(v:number)=>void;
   lookups: Lookups;
   map: MapDocument;
   bins: BinDocument | null;
@@ -40,17 +43,22 @@ export function StaffView({
   region,
   setRegion,
   sport,
-  setSport,
+  setSport, target, setTarget,
 }: Props) {
-  const [target, setTarget] = useState(120000);
+  const activeProvince = region === 'ALL' ? mapProvince : provinceOf(region);
+  const regionName = region === 'ALL' ? (provinceNames[activeProvince] ?? '전국') : regionLabel(region,lookups.regions);
+  const sportName = lookups.sports.find(s => s.sport_key === sport)?.sport_name ?? '전체 종목';
+  const periodName = period === '2024plus' ? '2024년 이후' : period === 'all_observed' ? '전체 관측 기간' : `${period}년`;
+  const scope = `${periodName} · ${regionName} · ${sportName}`;
+  const scopedBins = useMemo(() => bins && region === 'ALL' ? provinceBins(bins,activeProvince,sport) : bins, [bins,region,activeProvince,sport]);
   const rows = map.records.filter(
     (r) => r.sport_key === sport && r.region_key !== "ALL",
   );
   const national = map.records.find(
       (r) => r.region_key === "ALL" && r.sport_key === sport,
     ),
-    sim = bins
-      ? simulateFromBins(bins, target, { regionKey: region, sportKey: sport })
+    sim = scopedBins
+      ? simulateFromBins(scopedBins, target, { regionKey: region, sportKey: sport })
       : null,
     years = Object.entries(history.national)
       .filter(([k]) => k.startsWith(`${unit}:`))
@@ -80,7 +88,7 @@ export function StaffView({
           기준기간 {map.records[0]?.observed_from} -{" "}
           {map.records[0]?.observed_through} | 집계단위{" "}
           {unit === "unique_course" ? "고유 강좌" : "월별 기록"} | 표본{" "}
-          {national?.denominator.toLocaleString() ?? "기록 없음"}개 | 시군구{" "}
+          {national?.denominator.toLocaleString() ?? "기록 없음"}{itemUnit} | 시군구{" "}
           {rows.length}곳
         </b>
       </section>
@@ -114,17 +122,8 @@ export function StaffView({
           >
             월별 기록
           </button>
-          <label>
-            지역
-            <select value={region} onChange={(e) => setRegion(e.target.value)}>
-              <option value="ALL">전체 지역</option>
-              {lookups.regions.map((r) => (
-                <option key={r.region_key} value={r.region_key}>
-                  {r.region_name ?? `지역명 미제공 (${r.region_key})`}
-                </option>
-              ))}
-            </select>
-          </label>
+          <RegionFilter regions={lookups.regions} province={activeProvince} region={region}
+            onProvince={v => {setMapProvince(v);setRegion('ALL')}} onRegion={v => {if(v !== 'ALL') setMapProvince(provinceOf(v));setRegion(v)}} />
           <label>
             종목
             <select value={sport} onChange={(e) => setSport(e.target.value)}>
@@ -137,6 +136,7 @@ export function StaffView({
             </select>
           </label>
         </div>
+        <p className="scope-badge">전국 비교 기준 · {periodName} · {sportName} · {unit === "unique_course" ? "고유 강좌" : "월별 기록"}</p>
         <div className="summary-grid">
           <Metric
             label={`전국 한도가(${national?.cap_krw ? won(national.cap_krw) : "혼합 한도"}) 강좌`}
@@ -147,7 +147,7 @@ export function StaffView({
             }
             sub={
               national
-                ? `${national.denominator.toLocaleString()}개 중 ${national.at_cap_count.toLocaleString()}개`
+                ? `${national.denominator.toLocaleString()}${itemUnit} 중 ${national.at_cap_count.toLocaleString()}${itemUnit}`
                 : ""
             }
           />
@@ -178,10 +178,11 @@ export function StaffView({
       </section>
       <section className="wrap map-section" id="map">
         <SectionTitle>한도붙음 지도와 수치</SectionTitle>
+        <p className="scope-badge">지도 분석 범위 · {scope}</p>
         <div className="map-head">
           <span>시도 요약 · 광주·전남은 원천 지역코드상 통합 집계</span>
           <span>
-            기간 {period} · 분모{" "}
+            기간 {periodName} · 분모{" "}
             {unit === "unique_course" ? "고유 강좌" : "월별 기록"} · 적용 한도{" "}
             {national?.cap_krw ? won(national.cap_krw) : "기간별 한도"}
           </span>
@@ -194,6 +195,7 @@ export function StaffView({
         >
           한도 변경 시뮬레이션
         </SectionTitle>
+        <p className="scope-badge">시뮬레이션 범위 · {scope} · {unit === "unique_course" ? "고유 강좌" : "월별 기록"}</p>
         <div className="target-tabs">
           <span>가상 한도</span>
           {[120000, 130000, 140000, 150000].map((n) => (
@@ -214,21 +216,18 @@ export function StaffView({
         ) : sim?.status === "ok" ? (
           <>
             <p>
-              {period}년{" "}
-              {region === "ALL"
-                ? "전국"
-                : (lookups.regions.find((r) => r.region_key === region)
-                    ?.region_name ?? region)}{" "}
+              {periodName} {regionName} · {sportName}{" "}
               {unit === "unique_course" ? "고유 강좌" : "월별 기록"}{" "}
               {sim.compared_records.toLocaleString()}{itemUnit} 기준. 현재 한도{" "}
               {won(sim.base_cap_krw)}에서 한도 내 {unit === "unique_course" ? "강좌는" : "월별 기록은"}{" "}
               {sim.baseline_eligible_count.toLocaleString()}{itemUnit}입니다.
             </p>
-            <p className="sim-explanation">
+            <p className="sim-result-summary" role="status">{simulationSummary(sim, scope, unit)}</p>
+            <div className="sim-explanation"><p>
               월 한도를 {won(target)}으로 바꿨을 때, 강좌가격이 어떻게 움직인다고 가정하느냐에 따라 한도 안에 들어오는 {itemLabel}를 비교합니다.
-              ‘절반 상승’은 모든 강좌가격에 한도 증가분의 50%를, ‘전액 상승’은 100%를 더한 경우입니다.
-              ‘새로 한도 내’는 현재 한도를 초과했지만 변경 후 한도 안에 들어오는 {itemLabel}입니다.
-            </p>
+              </p><p>‘절반 상승’은 모든 강좌가격에 한도 증가분의 50%를, ‘전액 상승’은 100%를 더한 경우입니다.
+              </p><p>‘새로 한도 내’는 현재 한도를 초과했지만 변경 후 한도 안에 들어오는 {itemLabel}입니다.</p>
+            </div>
             <div className="sim-table" role="region" aria-label="가격 반응 가정별 비교표" tabIndex={0}>
               <div className="sim-head">
                 <span><span className="sim-heading-line">가격 반응</span><span className="sim-heading-line">가정</span></span>
@@ -268,6 +267,8 @@ export function StaffView({
       </section>
       <section className="wrap history" id="history">
         <SectionTitle>과거 가격 구성</SectionTitle>
+        <p className="scope-badge">전국 · 전체 종목 · 2020~2026년 · {unit === "unique_course" ? "고유 강좌" : "월별 기록"}</p>
+        <p className="observation-note">과거 구성은 전국 전체 종목의 공통 비교 자료입니다. 위의 지역·종목·기간 선택은 적용되지 않습니다.</p>
         <div className="history-grid">
           <div>
             <h3>기간별 월 한도와 같은 가격의 강좌 비율</h3>
