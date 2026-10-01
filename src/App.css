@@ -1150,7 +1150,16 @@ nav button.active {
 .history-grid > div { min-width: 0; }
 
 /* Approved editorial runner and cumulative course selection. */
-.runner-illustration {height:auto;object-fit:contain;mix-blend-mode:multiply;}
+/* Fade the raster canvas into the hero instead of exposing its rectangular edge. */
+.runner-illustration {
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  mask-composite: intersect;
+}
 .budget-card-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px;font-size:13px;}
 .budget-card-heading button,.selected-courses button{background:transparent;color:white;border:1px solid #aabddd;border-radius:6px;padding:6px 9px;font-size:11px;}
 .budget-card .price-bar{overflow:hidden;border-radius:6px;}
