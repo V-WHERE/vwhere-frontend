@@ -1145,3 +1145,6 @@ nav button.active {
     scroll-margin-top: 64px;
   }
 }
+
+/* Grid children must shrink before their internal charts scroll on mobile. */
+.history-grid > div { min-width: 0; }

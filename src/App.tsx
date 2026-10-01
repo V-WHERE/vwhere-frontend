@@ -28,6 +28,7 @@ export default function App() {
   const [pendingSection, setPendingSection] = useState<StaffSection>('map')
   const [month, setMonth] = useState('')
   const [region, setRegion] = useState('ALL')
+  const [mapProvince, setMapProvince] = useState('ALL')
   const [sport, setSport] = useState('ALL')
   const [period, setPeriod] = useState('2026')
   const [unit, setUnit] = useState<AggregateUnit>('unique_course')
@@ -145,7 +146,8 @@ export default function App() {
       ) : (
         <StaffView lookups={lookups} map={map} bins={bins} history={history}
           period={period} setPeriod={setPeriod} unit={unit} setUnit={setUnit}
-          region={region} setRegion={setRegion} sport={sport} setSport={setSport} />
+          region={region} setRegion={setRegion} sport={sport} setSport={setSport}
+          mapProvince={mapProvince} setMapProvince={setMapProvince} />
       )}
       <footer>자료: 장애인스포츠강좌이용권 강좌 가격 기록 · 게시가격 기준 · V:WHERE</footer>
     </div>
