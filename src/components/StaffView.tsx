@@ -229,14 +229,14 @@ export function StaffView({
               ‘절반 상승’은 모든 강좌가격에 한도 증가분의 50%를, ‘전액 상승’은 100%를 더한 경우입니다.
               ‘새로 한도 내’는 현재 한도를 초과했지만 변경 후 한도 안에 들어오는 {itemLabel}입니다.
             </p>
-            <div className="sim-table">
+            <div className="sim-table" role="region" aria-label="가격 반응 가정별 비교표" tabIndex={0}>
               <div className="sim-head">
-                <span>가격 반응 가정</span>
-                <span>강좌별 가정 인상액</span>
-                <span>변경 한도 내 {itemLabel}</span>
-                <span>전체 대비 한도 내 비율</span>
-                <span>새로 한도 내에 들어온 {itemLabel}</span>
-                <span>변경 한도와 가격이 같은 {itemLabel}</span>
+                <span><span className="sim-heading-line">가격 반응</span><span className="sim-heading-line">가정</span></span>
+                <span><span className="sim-heading-line">강좌별 가정</span><span className="sim-heading-line">인상액</span></span>
+                <span><span className="sim-heading-line">변경 한도 내</span><span className="sim-heading-line">{itemLabel}</span></span>
+                <span><span className="sim-heading-line">전체 대비</span><span className="sim-heading-line">한도 내 비율</span></span>
+                <span><span className="sim-heading-line">새로 한도 내에</span><span className="sim-heading-line">들어온 {itemLabel}</span></span>
+                <span><span className="sim-heading-line">변경 한도와 가격이</span><span className="sim-heading-line">같은 {itemLabel}</span></span>
               </div>
               {sim.scenarios.map((s, i) => (
                 <div className="sim-row" key={s.key}>
